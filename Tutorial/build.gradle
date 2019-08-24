@@ -1,0 +1,10 @@
+allprojects {
+    apply plugin: 'java'
+    group = 'dev.tinson.unimelb.comp90056'
+    version = '0.0'
+
+    repositories {
+        jcenter()
+        mavenCentral()
+    }
+}
