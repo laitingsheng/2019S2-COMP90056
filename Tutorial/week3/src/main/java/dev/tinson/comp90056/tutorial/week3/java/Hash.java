@@ -11,7 +11,7 @@ public class Hash {
     }
 
     public Hash() {
-        Random random = new Random(System.currentTimeMillis());
+        Random random = new Random();
         a = random.nextInt(p - 1) + 1;
         b = random.nextInt(p);
     }

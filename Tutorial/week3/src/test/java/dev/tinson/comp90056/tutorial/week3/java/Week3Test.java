@@ -59,6 +59,6 @@ public class Week3Test {
         for (int item : reservoir.report())
             copy.merge(item, -1, Integer::sum);
         for (int v : copy.values())
-            assertTrue(v >= 0);
+            assertTrue(v >= 0 && v <= 20);
     }
 }

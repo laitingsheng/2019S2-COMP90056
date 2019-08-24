@@ -13,11 +13,15 @@ public class Week4Test {
 
     @Test
     public void testMorrisCounter() {
+        int count = 0;
         for (int i = 0; i < 100; ++i) {
             MorrisCounter counter = new MorrisCounter(0.1, 0.1);
             for (int m = 0; m < 100; ++m)
                 counter.increment();
-            assertTrue(counter.count() > 32);
+            double c = counter.count();
+            if (c >= 90 && c <= 110) // epsilon = 0.1
+                ++count;
         }
+        assertTrue(count >= 90 && count <= 100); // delta = 0.1
     }
 }

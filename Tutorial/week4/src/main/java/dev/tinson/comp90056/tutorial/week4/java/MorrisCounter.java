@@ -17,10 +17,9 @@ public class MorrisCounter {
     }
 
     public void increment() {
-        Random random = new Random(System.currentTimeMillis());
         for (long[] group : estimates)
             for (int i = 0; i < gc; ++i)
-                if (random.nextDouble() < 1.0 / group[i])
+                if (new Random().nextDouble() < 1.0 / group[i])
                     group[i] <<= 1;
     }
 

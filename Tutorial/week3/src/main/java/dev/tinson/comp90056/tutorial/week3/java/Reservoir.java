@@ -17,12 +17,11 @@ public class Reservoir {
     }
 
     public void sample(IntStream stream) {
-        Random random = new Random(System.currentTimeMillis());
         stream.forEach(item -> {
             if (m < A.length)
                 A[m++] = item;
             else {
-                int r = random.nextInt(++m);
+                int r = new Random().nextInt(++m);
                 if (r < A.length)
                     A[r] = item;
             }
