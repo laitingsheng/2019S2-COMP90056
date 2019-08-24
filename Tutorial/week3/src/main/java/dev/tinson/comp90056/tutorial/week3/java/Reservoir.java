@@ -1,0 +1,35 @@
+package dev.tinson.comp90056.tutorial.week3.java;
+
+import java.util.Arrays;
+import java.util.Random;
+import java.util.stream.IntStream;
+
+public class Reservoir {
+    private final int[] A;
+    private int m = 0;
+
+    public Reservoir(int k) {
+        A = new int[k];
+    }
+
+    public int size() {
+        return Math.min(m, A.length);
+    }
+
+    public void sample(IntStream stream) {
+        Random random = new Random(System.currentTimeMillis());
+        stream.forEach(item -> {
+            if (m < A.length)
+                A[m++] = item;
+            else {
+                int r = random.nextInt(++m);
+                if (r < A.length)
+                    A[r] = item;
+            }
+        });
+    }
+
+    public int[] report() {
+        return Arrays.copyOf(A, size());
+    }
+}

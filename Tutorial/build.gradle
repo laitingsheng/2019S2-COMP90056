@@ -1,6 +1,6 @@
 allprojects {
     apply plugin: 'java'
-    group = 'dev.tinson.unimelb.comp90056'
+    group = 'dev.tinson.unimelb.comp90056.tutorial'
     version = '0.0'
 
     repositories {
@@ -11,7 +11,6 @@ allprojects {
 
 subprojects {
     dependencies {
-        implementation fileTree(dir: "${rootDir}/libs", include: ['*.jar'])
         testImplementation "junit:junit:4.12"
     }
 }
