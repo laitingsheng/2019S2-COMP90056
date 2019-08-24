@@ -1,4 +1,4 @@
-package dev.tinson.comp90056.tutorial.week4.java;
+package dev.tinson.comp90056.tutorial;
 
 import java.util.Arrays;
 import java.util.Random;

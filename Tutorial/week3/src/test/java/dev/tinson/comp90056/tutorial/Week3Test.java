@@ -1,4 +1,4 @@
-package dev.tinson.comp90056.tutorial.week3.java;
+package dev.tinson.comp90056.tutorial;
 
 import org.junit.Rule;
 import org.junit.Test;
