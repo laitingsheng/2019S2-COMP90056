@@ -1,0 +1,303 @@
+\documentclass[a4paper]{article}
+\usepackage[margin=0.5in]{geometry}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\title{\textbf{COMP90056 Content}}
+\author{Tinson Lai}
+\date{2019}
+
+\newcommand{\Expected}[1]{\mathbb{E}[#1]}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\newpage
+
+\section{Introduction}
+
+\subsection{Birthday Paradox}
+
+Assume there are $n$ possible birthdays and $m$ distinct people. The number of different sequences of $m$ birthdays is:
+$$\#(\text{birthdays}) = \prod_{i=1}^{m}n = n^m$$
+Adding constraint that each person has a distinct birthday becomes:
+$$\#(\text{distinct birthdays}) = \prod_{i=1}^{m}(n-i+1) = \frac{n!}{(n-m)!} = \binom{n}{m}m!$$
+Thus the probability is:
+$$Pr(\text{no collisions}) = \frac{\#(\text{distinct birthdays})}{\#(\text{birthdays})} = \frac{\binom{n}{m}m!}{n^m}$$
+Using the following \textbf{important inequality}:
+$$1 - x \leq e^{-x}$$
+Also, to make the problem non-trivial, $m$ and $n$ need to satisfied that
+$$m \leq n$$
+Simplifying the original expression:
+\begin{equation*}
+\begin{split}
+Pr(\text{no collisions}) & = \frac{\prod_{i=1}^{m}(n-i+1)}{\prod_{i=1}^{m}n} \\
+& = \prod_{i=1}^{m}\frac{n-i+1}{n} \\
+& = \prod_{i=1}^{m}(1-\frac{i-1}{n}) \\
+& = \prod_{i=0}^{m-1}(1-\frac{i}{n}) \\
+& \leq \prod_{i=0}^{m-1}\exp(-\frac{i}{n}) \text{ (since $m \leq n \Rightarrow \forall i\ 1-\frac{i}{n} \geq 0$)} \\
+& = \exp(-\sum_{i=0}^{m-1}\frac{i}{n}) \\
+& = \exp(-\frac{m(m-1)}{2n}) \\
+& \leq \exp(-\frac{(m-1)^2}{2n})
+\end{split}
+\end{equation*}
+To make it \textbf{more likely} that at least one pair share the same birthday\footnote{i.e., probability of collisions needs to be more than a half}, we need to let
+$$Pr(\text{no collisions}) \leq \frac{1}{2}$$
+
+\subsubsection{Theorem*}
+
+If $n$ attributes are assigned \textbf{uniformly and independently} to $m$ \textbf{distinct} objects, then:
+$$m \geq 1 + \sqrt{2n\ln{2}} \Rightarrow Pr(\text{no collisions}) \leq \frac{1}{2}$$
+Proof: since $Pr(\text{no collisions}) \leq \exp(-\frac{(m - 1)^2}{2n})$, let $\exp(-\frac{(m - 1)^2}{2n}) \leq \frac{1}{2}$, then:
+\begin{equation*}
+\begin{split}
+\exp(-\frac{(m - 1)^2}{2n}) & \leq \frac{1}{2} \\
+-\frac{(m - 1)^2}{2n} & \leq \ln{\frac{1}{2}} = -\ln{2} \text{ (since $ln{(x)}$ is monotonically increasing)} \\
+\frac{(m - 1)^2}{2n} & \geq \ln{2} \\
+(m - 1)^2 & \geq 2n\ln{2} \text{ (since $n \geq 0$)} \\
+m - 1 & \geq \sqrt{2n\ln{2}} \text{ (since $\sqrt{x}$ is monotonically increasing)} \\
+m & \geq 1 + \sqrt{2n\ln{2}}
+\end{split}
+\end{equation*}
+
+\subsection{Missing Numbers}
+
+An \textbf{opaque} bag with $n - 1$ balls which numbered distinctly in the interval $[1, n]$. Thus one of the numbers should be missing. The only repeating procedures (in a \textbf{data stream} way) taken are
+\begin{enumerate}
+    \item Remove a ball from the bag
+    \item Inspect the ball
+    \item Update your memory (but \textbf{very little}, thus \textbf{impossible} to record every number drawed from the bag)
+    \item Throw the ball away
+\end{enumerate}
+
+\subsubsection{Solution?}
+
+Let array $A[1..n-1]$ denotes the numbers on the balls in bag. The simplest solution is to perform
+$$\frac{n(n+1)}{2}-\sum_{i=1}^{n-1}A[i]$$
+This is fast (1 addition per ball, time complexity is $O(n)$) with minor space (space complexity is $O(1)$) and it supports fast query (1 multiplication, 1 bit shift - divided by 2, 1 subtraction).
+
+\subsection{Missing Numbers (Harder)}
+
+Based on previous section, we can remove some constraints:
+\begin{itemize}
+    \item The numbers may \textbf{not} necessarily have to be distinct - might have the same number
+    \item Balls may be able to be \textbf{added} or \textbf{removed} from the bag one by one
+\end{itemize}
+Starting with an empty bag, how to determine if all balls in the bag have the same number after certain steps of adding and removing? The following rules need to be obeyed:
+\begin{itemize}
+    \item \textbf{Very little} Memory - \textbf{impossible} to record which balls are in the bag
+    \item Following previous rule, \textbf{no} record of the number of each kind of balls in the bag
+\end{itemize}
+
+\subsubsection{Solution?}
+
+Later in the subject (in a way which just record 3 numbers)...
+
+\subsection{Streams}
+
+\subsubsection{Description}
+
+A stream is a sequence of data-points that \textbf{do not fit into memory} and \textbf{appear in an online setting}. The two key attributes of the stream are
+\begin{itemize}
+    \item ordered
+    \item large
+\end{itemize}
+
+\subsubsection{Definition*}
+
+A \textbf{data stream} $S = \langle(s_1, \Delta_1),(s_2, \Delta_2),...,(s_m, \Delta_m)\rangle$ contains a sequence of \textbf{updates} ($\Delta_i$) to a \textbf{universe of tokens} $U = [n] = \{1,...,n\}$. Constraints over the $\Delta_i$ values constitute different models of data streaming:
+\begin{itemize}
+    \item \textbf{Insertion Only}: $\forall j \in [m]\ \Delta_j > 0$
+    \item \textbf{General Turnstile}: $\forall i \in [n]\ \sum_{\{j | s_j = i\}}\Delta_j \geq 0$
+    \item \textbf{Dynamic}: $\forall j \in [m]\ \Delta_j \in \{-M,-M+1,...,M\}$ and $M$ is \textbf{not too large}
+\end{itemize}
+
+\subsubsection{Summary/Sketch}
+
+As the nature of data stream, we \textbf{do not} have the capacity to store the stream in memory. Instead, we store a \textbf{summary} or \textbf{sketch} which enables approximate queries. It has three key attributes
+\begin{itemize}
+    \item Compactness (memory efficiency)
+    \item Speed - updated and queried at a small time cost (time efficiency)
+    \item Accuracy
+\end{itemize}
+The notion of accuracy implies that streaming algorithms are \textbf{approximations} to the supported queries. Approximations can be categorised into
+\begin{itemize}
+    \item Deterministic
+    \item Randomised, which employs a degree of randomness - a source of random bits\footnote{Cannot acquire truly random bits in practice. Often suffices that the bits 'appear' random}, and this can be further categorised into
+    \begin{itemize}
+        \item \textbf{Las Vegas}: terminates with \textbf{correct} answer, but uses randomness (and expects) to reduce its runtime (such as QuickSort)
+        \item \textbf{Monte Carlo}: has a chance of producing \textbf{incorrect} results - this is what a \textit{randomised streaming algorithm} supporting approximate queries constitutes
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Randomised Streaming Algorithms}
+
+Formally, an exact algorithm $\Phi$ and a randomised approximate algorithm $\hat{\Phi}$ support a query $Q$. Given an input $S$ with two parameters $\epsilon,\delta > 0$, a \textbf{well designed} $\hat{\Phi}$ \textbf{guarantee} to solve query $Q$
+$$(1-\epsilon)\hat{\Phi}(S) \leq \Phi(S) \leq (1+\epsilon)\hat{\Phi}(S)$$
+with a probability greater than $1-\delta$.
+
+\subsubsection{Trade-off}
+
+Following the previous formal definition. $\Phi$ \textbf{outperforms} $\hat{\Phi}$ in terms of accuracy. Thus $\hat{\Phi}$ should \textbf{improve the efficiency}. However, there is a trade-off between \textit{size} of summary, \textit{efficiency} and \textit{accuracy} and they often \textbf{cannot} be achieved simultaneously.
+
+\subsection{Discrete Random Variables}
+
+Let $X$ be a random variable with a \textbf{countable number of finite outcomes} (in \textbf{discrete} space) $\{x_k\}_{k \geq 1}$ occurring with probabilities $\{p_k\}_{k \geq 1}$. Its expectation (or expected value)\footnote{\url{https://en.wikipedia.org/wiki/Expected_value\#Finite_case}} and variance\footnote{\url{https://en.wikipedia.org/wiki/Variance\#Discrete_random_variable}} are defined as the following.
+
+\subsubsection{Expectation}
+
+$$\Expected{X} = \sum_{k \geq 1}x_k p_k = \sum_{k \geq 1}Pr[X \geq k]$$
+
+\subsubsection{Variance}
+
+$$var(X) = \sum_{k \geq 1}(x_k - \Expected{X})^2 \cdot p_k = \Expected{(X-\Expected{X})^2} = \Expected{X^2}-\Expected{X}$$
+
+\subsection{Complexity}
+
+Big O notation is the one commonly used\footnote{\url{https://en.wikipedia.org/wiki/Big_O_notation}}. There are other \textbf{asymptotic} notations\footnote{\url{https://en.wikipedia.org/wiki/Big_O_notation\#Related_asymptotic_notations}}.
+
+\subsubsection{Dictionary Data Structure}
+
+\begin{itemize}
+    \item Bitmap\footnote{\url{https://en.wikipedia.org/wiki/Bit_array}}
+    \item Array\footnote{\url{https://en.wikipedia.org/wiki/Array_data_structure}}
+    \item Hash Table\footnote{\url{https://en.wikipedia.org/wiki/Hash_table}}
+\end{itemize}
+
+\subsection{Concentration Bounds}
+
+\subsubsection{Theorem*: Markov's Inequality}
+
+Let $X$ be a nonnegative random variable and $a > 0$, and let $\mu = \Expected{X}$, then:
+$$Pr(X \geq a) \leq \frac{\mu}{a}$$
+Let $a = t\mu$, then:
+$$Pr(X \geq t\mu) \leq \frac{1}{t}$$
+Proof: \url{https://en.wikipedia.org/wiki/Markov\%27s_inequality\#Proofs}
+
+\subsubsection{Theorem*: Chebyshev's Inequality}
+
+Let $X$ be a random variable, $\mu = \Expected{X}$ and $\sigma^2 = var(X)$, for any $t > 0$:
+$$Pr(|X - \mu| \geq t\mu) \leq \frac{\sigma^2}{(t\mu)^2} = \frac{1}{t^2} \cdot \frac{\sigma^2}{\mu^2}$$
+Let $k = \frac{t\mu}{\sigma}$, then:
+$$Pr(|X - \mu| \geq k\sigma) \leq \frac{1}{k^2}$$
+Proof: \url{https://en.wikipedia.org/wiki/Chebyshev\%27s_inequality\#Proof_(of_the_two-sided_version)}
+
+\subsubsection{Theorem*: Chernoff Bound}
+
+\url{https://en.wikipedia.org/wiki/Chernoff_bound}
+
+\subsubsection{More}
+
+\url{https://en.wikipedia.org/wiki/Expected_value\#Inequalities}
+
+\section{Addition Exercises}
+
+\subsection{Exercise 1.1}
+
+Show that $\forall \epsilon>0\ \log N = o(N^\epsilon)$
+
+\subsubsection{Answer}
+
+\begin{equation*}
+\begin{split}
+\lim_{N\to\infty}\frac{\log N}{N^\epsilon} & = \lim_{N\to\infty}\frac{(\frac{1}{N})}{\epsilon N^{\epsilon-1}} \text{ (by L'Hospital's Rule)} \\
+& = \lim_{N\to\infty}\frac{1}{\epsilon N^\epsilon} = 0
+\end{split}
+\end{equation*}
+Thus $\forall \epsilon>0\ \log N = o(N^\epsilon)$
+
+\subsection{Exercise 1.2}
+
+For a particular dice game, a team has n players. Each player gets one dice roll. A team gets 1 point for each pair who throw the same number. Find the mean and variance of the total score of the team.
+
+\subsubsection{Answer}
+
+Let $A[1..n]$ denotes the numbers on all dices where $A[i]$ represents the number rolled by the $i$-th player, $X_{ij}$ denotes the event such that it becomes 1 if $A[i]=A[j]$ or 0 otherwise, or formally:
+\[
+X_{ij} =
+\begin{cases}
+1 & A[i] = A[j] \\
+0 & \text{otherwise}
+\end{cases}
+\]
+Then $\Expected{X_{ij}}=\frac{1}{6}$ and $var(X_{ij}) = \frac{5}{36}$. Based on $X_{ij}$, we can define the total score point $S$ as:
+$$S = \sum_{a=1}^{n}\sum_{b=a}^{n}X_{ab}$$
+Thus the expectation is
+$$\Expected{S} = \Expected{\sum_{a=1}^{n}\sum_{b=a}^{n}X_{ab}} = \sum_{a=1}^{n}\sum_{b=a}^{n}\Expected{X_{ab}} = \frac{\binom{n}{2}}{6}$$
+Using the fact that each $X_{ij}$ is mutually independent, i.e.
+$$\forall a,b,c,d \in [1..n]\ a \neq b \wedge c \neq d \Rightarrow Cov(X_{ab}, X_{cd}) = 0$$
+where $Cov(X, Y)$ is the covariance, thus the variance is
+$$var(S) = var(\sum_{a=1}^{n}\sum_{b=a}^{n}X_{ab}) = \sum_{a=1}^{n}\sum_{b=a}^{n}var(X_{ab}) = \frac{5\binom{n}{2}}{36}$$
+
+\subsection{Exercise 1.3}
+
+Show that $var(a+X) = var(X)$ for any random variable $X$ and constant $a$.
+
+\subsubsection{Answer}
+
+Simplify:
+\begin{equation*}
+\begin{split}
+var(X+a) & = \Expected{((X+a)-\Expected{X+a})^2} \\
+& = \Expected{(X+a-(\Expected{X}+a))^2} \\
+& = \Expected{(X-\Expected{X})^2} \\
+& = var(X)
+\end{split}
+\end{equation*}
+
+\subsection{Exercise 1.4}
+
+A biased coin is tossed $n$ times with the bias set to $p$ (this means the the coin turns heads with probability $p$). A run is a sequence of tosses returning in the same outcome, so that, for example, the sequence THHTTHTTH contains six runs. Show that the expected number of runs is $1+2(n-1)p(1-p)$. Find the variance.
+
+\subsubsection{Answer}
+
+Let 1 represents Head and 0 represents Tail. Let $X_i$ denotes the face of $i$-th coin after tossing, thus
+\begin{equation*}
+\begin{split}
+Pr(X_i=1) & = p \\
+Pr(X_i=0) & = 1-p
+\end{split}
+\end{equation*}
+Let $Y_j$ denotes the event such that $X_{j-1} \neq X_j$
+\[
+Y_j =
+\begin{cases}
+1 & X_{j-1} \neq X_j \\
+0 & otherwise
+\end{cases}
+\]
+Then $\Expected{Y_j} = 2p(1-p)$ and $var(Y_j) = 2p(1-p)(1-2p(1-p))$. Let $R$ denotes the number of runs, it is calculated by
+$$R = \sum_{j=1}^{n-1}Y_j+1$$
+Thus the expectation is
+$$\Expected{R} = \Expected{\sum_{j=1}^{n-1}Y_j+1} = 1+\sum_{j=1}^{n-1}\Expected{Y_j} = 1 + 2(n-1)p(1-p)$$
+Again, each $Y_j$ is mutually independent, so the variance is
+$$var(R) = var(\sum_{j=1}^{n-1}Y_j+1) = var(\sum_{j=1}^{n-1}Y_j) = \sum_{j=1}^{n-1}var(Y_j) = 2p(1-n)(1-p)(1-2p(1-p))$$
+
+\subsection{Exercise 1.5}
+
+To give an approximation to the collision probability, show:
+$$\frac{\binom{n}{m}m!}{n^m} = e^{-\frac{m^2}{2n}}(1+O(\frac{k}{n})+O(\frac{k^3}{n^2}))$$
+holds for $k = o(n^\frac{2}{3})$. You may need the approximation:
+$$\ln{(1+x)} = x+O(x^2)$$
+Note, that the RHS is a much easier calculation.
+
+\subsubsection{Answer}
+
+Simplify LHS:
+\begin{equation*}
+\begin{split}
+\frac{\binom{n}{m}m!}{n^m} & = \prod_{i=0}^{m-1}(1-\frac{i}{n}) \\
+& = \exp{(\ln{(\prod_{i=0}^{m-1}(1-\frac{i}{n}))})} \\
+& = \exp{(\sum_{i=0}^{m-1}\ln{(1-\frac{i}{n})})} \\
+& = \exp{(\sum_{i=0}^{m-1}(-\frac{i}{n}+O(\frac{i^2}{n^2})))} \\
+& = \exp{(\sum_{i=0}^{m-1}-\frac{i}{n}+\sum_{i=0}^{m-1}O(\frac{i^2}{n^2}))} \\
+& = \exp{(-\frac{m^2}{2n}+\frac{m}{2n}+\sum_{i=0}^{m-1}O(\frac{i^2}{n^2}))} \\
+& = \exp{(-\frac{m^2}{2n})} \cdot \exp{(\frac{m}{2n})} \cdot \exp{(\sum_{i=0}^{m-1}O(\frac{i^2}{n^2}))}
+\end{split}
+\end{equation*}
+
+\end{document}
