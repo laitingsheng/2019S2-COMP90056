@@ -4,17 +4,11 @@
 // Aug 2017,8,9
 
 public class Hash {
-    private int p = 24593; //smaller than 2^15
-    private int a, b;        // only use for hash tables < 24593 in size
+    private final int p = 24593; //smaller than 2^15
+    private final int a, b;        // only use for hash tables < 24593 in size
 
     public static int h_basic(Object key) {        // if you only want the
-        return (key.hashCode() & 0x0000ffff);   // lower 16 bits
-    }
-
-    public static void main(String args[]) {
-        Hash h = new Hash();
-
-        int h2 = h.h2u(100, 20);
+        return key.hashCode() & 0x0000ffff;   // lower 16 bits
     }
 
     public Hash() {
@@ -23,8 +17,6 @@ public class Hash {
     }
 
     public int h2u(int x, int r) {
-
-        int y = (a * x + b) % p;
-        return y % r;
+        return (a * x + b) % p % r;
     }
 }

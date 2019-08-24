@@ -35,5 +35,6 @@ public class Reservoir {
         // use the returned int to say how many integers are in the sample! (what if n<k?!)
 
         // actually, this is a very ugly C-style way of doing this.
+        return 0;
     }
 }

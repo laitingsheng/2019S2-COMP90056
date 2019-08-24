@@ -8,3 +8,10 @@ allprojects {
         mavenCentral()
     }
 }
+
+subprojects {
+    dependencies {
+        implementation fileTree(dir: "${rootDir}/libs", include: ['*.jar'])
+        testImplementation "junit:junit:4.12"
+    }
+}
