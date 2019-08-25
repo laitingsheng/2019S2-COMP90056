@@ -1,13 +1,19 @@
 package dev.tinson.unimelb.comp90056.java.week4;
 
 import dev.tinson.unimelb.comp90056.java.common.DistinctCounter;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
+import org.junit.rules.TestRule;
 
 import java.util.Random;
 
 import static org.junit.Assert.assertTrue;
 
 public class Week4Test {
+    @Rule
+    public TestRule rule = new TestName();
+
     @Test
     public void testMorrisCounter() {
         int count = 0;

@@ -1,6 +1,9 @@
 package dev.tinson.unimelb.comp90056.java.week3;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
+import org.junit.rules.TestRule;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -10,6 +13,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class Week3Test {
+    @Rule
+    public TestRule rule = new TestName();
+
     @Test
     public void testBloomString() {
         String[] ss = {"Tony", "Matthias", "Yadeesha", "Shuo"};
