@@ -9,8 +9,6 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
-            <option value="$PROJECT_DIR$/week3" />
-            <option value="$PROJECT_DIR$/week4" />
           </set>
         </option>
         <option name="useQualifiedModuleNames" value="true" />
