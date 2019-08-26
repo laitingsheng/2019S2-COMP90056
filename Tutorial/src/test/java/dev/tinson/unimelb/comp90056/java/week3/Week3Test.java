@@ -18,7 +18,7 @@ public class Week3Test {
 
     @Test
     public void testBloomString() {
-        String[] ss = {"Tony", "Matthias", "Yadeesha", "Shuo"};
+        String[] ss = {"abc", "bcd", "cde", "def"};
         Bloom<String> b = new Bloom<>(40, 3);
         for (String s : ss)
             b.insert(s);
