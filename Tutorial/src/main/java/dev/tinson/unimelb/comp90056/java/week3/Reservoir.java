@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.stream.IntStream;
 
-public class Reservoir {
+public final class Reservoir {
     private final int[] A;
     private int m = 0;
 

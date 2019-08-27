@@ -1,6 +1,6 @@
 package dev.tinson.unimelb.comp90056.java.week3;
 
-public class Bloom<K> {
+public final class Bloom<K> {
     private final int n;
     private final Hash[] hashes;
     private final boolean[] filter;
@@ -8,9 +8,9 @@ public class Bloom<K> {
     public Bloom(int n, int k) {
         this.n = n;
         hashes = new Hash[k];
-        filter = new boolean[n];
         for (int i = 0; i < k; i++)
             hashes[i] = new Hash();
+        filter = new boolean[n];
     }
 
     public void insert(K key) {

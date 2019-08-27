@@ -4,7 +4,7 @@ import dev.tinson.unimelb.comp90056.java.common.DistinctCounter;
 
 import java.util.HashSet;
 
-public class BaselineDistinctCounter<K> implements DistinctCounter<K> {
+public final class BaselineDistinctCounter<K> implements DistinctCounter<K> {
     private HashSet<K> items = new HashSet<>();
 
     @Override

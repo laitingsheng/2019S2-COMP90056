@@ -49,12 +49,25 @@
         </task>
         <projects_view>
           <tree_state>
-            <expand />
+            <expand>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="tutorial" type="f1a62948:ProjectNode" />
+              </path>
+            </expand>
             <select />
           </tree_state>
         </projects_view>
       </state>
     </system>
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+        <option value="Kotlin Class" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="ADD_SUFFIX_TO_CHERRY_PICKS_OF_PUBLISHED_COMMITS" value="false" />
@@ -157,6 +170,7 @@
       <workItem from="1566711193366" duration="479000" />
       <workItem from="1566744957315" duration="601000" />
       <workItem from="1566780753156" duration="775000" />
+      <workItem from="1566896593551" duration="10916000" />
     </task>
     <servers />
   </component>

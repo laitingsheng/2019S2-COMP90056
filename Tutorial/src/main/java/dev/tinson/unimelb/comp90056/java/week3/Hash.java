@@ -2,9 +2,9 @@ package dev.tinson.unimelb.comp90056.java.week3;
 
 import java.util.Random;
 
-public class Hash {
+public final class Hash {
     private static final int p = 24593; //smaller than 2^15
-    private final int a, b; // only use for hash tables < 24593 in size
+    private final int a, b;
 
     public static int basic(Object key) {
         return key.hashCode() & 0x0000ffff; // only lower 16 bits
