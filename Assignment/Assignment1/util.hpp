@@ -27,24 +27,4 @@ private:
     unsigned int const a, b;
 }
 
-struct morris_counter final
-{
-    morris_counter() = default;
-
-    auto operator++()
-    {
-        if (r(std::mt19937_64) < 1.0 / p)
-            p <<= 1;
-        return *this;
-    }
-
-    auto count() const
-    {
-        return p - 1;
-    }
-private:
-    auto r = std::uniform_real_distribution();
-    unsigned long long p = 1;
-}
-
 #endif

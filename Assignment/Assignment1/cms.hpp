@@ -11,7 +11,7 @@ struct cms_default
         w = ceil(2 / epsilon / epsilon);
         d = ceil(log(1 / delta));
         hashes = new hash[d];
-        C = new unsigned long[d * w]();
+        init()
     }
 
     virtual void update(T item, std::size_t freq)
@@ -41,6 +41,11 @@ protected:
     unsigned long const w, d;
     hash<T> const * const hashes;
     unsigned long * const C;
+
+    virtual inline void init()
+    {
+        C = new unsigned long[d * w]();
+    }
 }
 
 template<typename T>
@@ -69,28 +74,25 @@ struct cms_morris final : public cms_default<T>
     {
         for (int i = 0; i < d; ++i)
         {
-            auto & c = C[i * w + hashes[i](item)];
-            auto p = 1 << c;
+            auto & p = C[i * w + hashes[i](item)];
             auto r = std::uniform_real_distribution();
             for (int j = 0; j < freq; ++j)
                 if (r(std::mt19937_64) < 1.0 / p)
-                {
-                    ++c;
                     p <<= 1;
-                }
         }
     }
 
-    virtual void query(T item, std::size_t freq) override
+    virtual void query(T item) override
     {
-        auto m = 1 << C[hashes[0](item)] - 1;
-        for (int i = 1; i < d; ++i)
-        {
-            auto c = 1 << C[i * w + hashes[i](item)] - 1;
-            if (c < m)
-                m = c;
-        }
-        return m;
+        return cms_default::query(item) - 1;
+    }
+protected:
+    virtual inline void init() override
+    {
+        auto t = d * w;
+        C = new unsigned long[t];
+        for (int i = 0; i < t; ++i)
+            C[i] = 1;
     }
 }
 
