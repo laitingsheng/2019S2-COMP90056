@@ -16,7 +16,7 @@ struct hash final
     hash & operator(hash const &) = delete;
 
     // force cast back to std::size_t as defined in the STL
-    std::size_t operator()(T item, int domain) const
+    std::size_t operator()(T item, std::size_t domain) const
     {
         return (unsigned long(a) * basic(item) + b) % p % domain;
     }
