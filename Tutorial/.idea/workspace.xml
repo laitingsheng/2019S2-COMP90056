@@ -49,12 +49,7 @@
         </task>
         <projects_view>
           <tree_state>
-            <expand>
-              <path>
-                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
-                <item name="tutorial" type="f1a62948:ProjectNode" />
-              </path>
-            </expand>
+            <expand />
             <select />
           </tree_state>
         </projects_view>
@@ -172,6 +167,8 @@
       <workItem from="1566780753156" duration="775000" />
       <workItem from="1566896593551" duration="10916000" />
       <workItem from="1566910959227" duration="2146000" />
+      <workItem from="1566978874885" duration="155000" />
+      <workItem from="1567136350414" duration="593000" />
     </task>
     <servers />
   </component>

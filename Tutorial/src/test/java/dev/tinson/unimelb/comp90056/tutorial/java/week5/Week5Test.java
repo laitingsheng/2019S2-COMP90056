@@ -1,6 +1,6 @@
-package dev.tinson.unimelb.comp90056.java.week5;
+package dev.tinson.unimelb.comp90056.tutorial.java.week5;
 
-import dev.tinson.unimelb.comp90056.java.common.DistinctCounter;
+import dev.tinson.unimelb.comp90056.tutorial.java.common.DistinctCounter;
 import org.junit.Test;
 
 import java.util.Random;

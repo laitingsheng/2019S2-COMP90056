@@ -1,4 +1,4 @@
-package dev.tinson.unimelb.comp90056.java.week3;
+package dev.tinson.unimelb.comp90056.tutorial.java.week3;
 
 public final class Bloom<K> {
     private final int n;

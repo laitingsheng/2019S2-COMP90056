@@ -1,4 +1,4 @@
-package dev.tinson.unimelb.comp90056.java.week4;
+package dev.tinson.unimelb.comp90056.tutorial.java.week4;
 
 import java.util.Arrays;
 import java.util.Random;
