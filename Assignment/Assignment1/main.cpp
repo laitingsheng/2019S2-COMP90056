@@ -27,48 +27,62 @@ private:
     unsigned int const a, b;
 };
 
-template<typename T>
-struct cms_default
+template<typename T, typename C>
+struct cms
 {
-    explicit cms_default(double epsilon, double delta)
+    cms(double epsilon, double delta)
     {
         w = ceil(2 / epsilon / epsilon);
         d = ceil(log(1 / delta));
         hashes = new hash[d];
-        init();
+        init_counters();
     }
+
+    cms(cms const &) = delete;
+    cms & operator=(cms const &) = delete;
+
+    virtual ~cms()
+    {
+        delete[] hashes;
+        delete[] counters;
+    }
+
+    virtual void update(T item, std::size_t freq) = 0;
+    virtual unsigned long query(T item) = 0;
+protected:
+    unsigned long const w, d;
+    hash<T> const * const hashes;
+    C * const counters;
+
+    virtual void init_counters() = 0;
+};
+
+template<typename T>
+struct cms_default : public cms<T, unsigned long>
+{
+    explicit cms_default(double epsilon, double delta) : cms<T, unsigned long>(epsilon, delta) {}
 
     virtual void update(T item, std::size_t freq)
     {
-        for (int i = 0; i < d; ++i)
-            C[i * w + hashes[i](item)] += freq;
+        for (int i = 0; i < this->d; ++i)
+            this->counters[i * this->w + this->hashes[i](item)] += freq;
     }
 
     virtual unsigned long query(T item)
     {
-        auto m = C[hashes[0](item)];
-        for (int i = 1; i < d; ++i)
+        auto m = this->counters[this->hashes[0](item)];
+        for (int i = 1; i < this->d; ++i)
         {
-            auto c = C[i * w + hashes[i](item)];
+            auto c = this->counters[i * this->w + this->hashes[i](item)];
             if (c < m)
                 m = c;
         }
         return m;
     }
-
-    virtual ~cms_default() final
-    {
-        delete[] hashes;
-        delete[] C;
-    }
 protected:
-    unsigned long const w, d;
-    hash<T> const * const hashes;
-    unsigned long * const C;
-
-    virtual inline void init()
+    virtual void init() override
     {
-        C = new unsigned long[d * w]();
+        this->counters = new unsigned long[this->d * this->w]();
     }
 };
 
@@ -90,26 +104,35 @@ struct cms_conservative final : public cms_default<T>
 };
 
 template<typename T>
-struct cms_morris final : public cms_default<T>
+struct cms_morris final : public cms<T, unsigned char>
 {
-    explicit cms_morris(double epsilon, double delta) : cms_default<T>(epsilon, delta) {}
+    explicit cms_morris(double epsilon, double delta) : g(), r(), cms<T, unsigned char>(epsilon, delta) {}
 
     virtual void update(T item, std::size_t freq) override
     {
         for (int i = 0; i < this->d; ++i)
         {
-            auto & p = this->C[i * this->w + this->hashes[i](item)];
-            auto r = std::uniform_real_distribution<>();
-            auto g = std::mt19937_64();
+            auto & c = this->C[i * this->w + this->hashes[i](item)];
+            auto p = 1UL << c;
             for (int j = 0; j < freq; ++j)
                 if (r(g) < 1.0 / p)
+                {
+                    ++c;
                     p <<= 1;
+                }
         }
     }
 
     virtual unsigned long query(T item)
     {
-        return cms_default<T>::query(item) - 1;
+        auto m = this->counters[this->hashes[0](item)];
+        for (int i = 1; i < this->d; ++i)
+        {
+            auto c = this->counters[i * this->w + this->hashes[i](item)];
+            if (c < m)
+                m = c;
+        }
+        return 1UL << m - 1;
     }
 protected:
     virtual inline void init() override
@@ -119,6 +142,9 @@ protected:
         for (int i = 0; i < t; ++i)
             this->C[i] = 1;
     }
+private:
+    std::uniform_real_distribution<> r;
+    std::mt19937_64 g;
 };
 
 int main()
