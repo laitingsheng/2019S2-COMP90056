@@ -1,45 +1,50 @@
+#include <iostream>
 #include <random>
 
 template<typename T>
 struct hash final
 {
-    hash()
-    {
-        auto r = std::uniform_int_distribution<unsigned int>(1, p);
-        auto g = std::mt19937();
-        a = r(g);
-        b = r(g) - 1;
-    }
+    hash() : b(r(g) - 1), a(r(g)) {}
 
     // prevent unintentional copy
     hash(hash const &) = delete;
     hash & operator=(hash const &) = delete;
 
     // force cast back to std::size_t as defined in the STL
-    std::size_t operator()(T item, std::size_t domain) const
+    std::size_t operator()(T item, unsigned long domain) const
     {
         return (static_cast<unsigned long>(a) * basic(item) + b) % p % domain;
     }
 private:
-    static constexpr unsigned int p = 1073741789;
-    static std::hash<T> const basic;
+    static constexpr auto p = 1073741789U;
+    static constexpr auto basic = std::hash<T>();
+    static std::uniform_int_distribution<unsigned int> r;
+    static std::mt19937 g;
 
     unsigned int const a, b;
 };
 
+template<typename T>
+std::uniform_int_distribution<unsigned int> hash<T>::r(1, hash<T>::p);
+
+template<typename T>
+std::mt19937 hash<T>::g = std::mt19937();
+
 template<typename T, typename C>
 struct cms
 {
-    cms(double epsilon, double delta)
-    {
-        w = ceil(2 / epsilon / epsilon);
-        d = ceil(log(1 / delta));
-        hashes = new hash[d];
-        init_counters();
-    }
+    cms(double epsilon, double delta) : counters(new C[w * d]()),
+                                        hashes(new hash<T>[d]()),
+                                        d(ceil(log(1 / delta))),
+                                        w(ceil(2 / epsilon / epsilon)) {}
 
     cms(cms const &) = delete;
     cms & operator=(cms const &) = delete;
+
+    virtual std::size_t memory_allocated() final
+    {
+        return sizeof(hash<T>) * d + sizeof(C) * d * w;
+    }
 
     virtual ~cms()
     {
@@ -53,8 +58,6 @@ protected:
     unsigned long const w, d;
     hash<T> const * const hashes;
     C * const counters;
-
-    virtual void init_counters() = 0;
 };
 
 template<typename T>
@@ -64,25 +67,20 @@ struct cms_default : public cms<T, unsigned long>
 
     virtual void update(T item, std::size_t freq)
     {
-        for (int i = 0; i < this->d; ++i)
-            this->counters[i * this->w + this->hashes[i](item)] += freq;
+        for (auto i = 0UL; i < this->d; ++i)
+            this->counters[i * this->w + this->hashes[i](item, this->w)] += freq;
     }
 
     virtual unsigned long query(T item)
     {
-        auto m = this->counters[this->hashes[0](item)];
-        for (int i = 1; i < this->d; ++i)
+        auto m = this->counters[this->hashes[0](item, this->w)];
+        for (auto i = 1UL; i < this->d; ++i)
         {
-            auto c = this->counters[i * this->w + this->hashes[i](item)];
+            auto c = this->counters[i * this->w + this->hashes[i](item, this->w)];
             if (c < m)
                 m = c;
         }
         return m;
-    }
-protected:
-    virtual void init() override
-    {
-        this->counters = new unsigned long[this->d * this->w]();
     }
 };
 
@@ -93,10 +91,10 @@ struct cms_conservative final : public cms_default<T>
 
     virtual void update(T item, std::size_t freq) override
     {
-        auto f = query(item) + freq;
-        for (int i = 0; i < this->d; ++i)
+        auto f = this->query(item) + freq;
+        for (auto i = 0UL; i < this->d; ++i)
         {
-            auto & c = this->C[i * this->w + this->hashes[i](item)];
+            auto & c = this->counters[i * this->w + this->hashes[i](item, this->w)];
             if (f > c)
                 c = f;
         }
@@ -106,15 +104,15 @@ struct cms_conservative final : public cms_default<T>
 template<typename T>
 struct cms_morris final : public cms<T, unsigned char>
 {
-    explicit cms_morris(double epsilon, double delta) : g(), r(), cms<T, unsigned char>(epsilon, delta) {}
+    explicit cms_morris(double epsilon, double delta) : cms<T, unsigned char>(epsilon, delta) {}
 
     virtual void update(T item, std::size_t freq) override
     {
-        for (int i = 0; i < this->d; ++i)
+        for (auto i = 0UL; i < this->d; ++i)
         {
-            auto & c = this->C[i * this->w + this->hashes[i](item)];
+            auto & c = this->counters[i * this->w + this->hashes[i](item, this->w)];
             auto p = 1UL << c;
-            for (int j = 0; j < freq; ++j)
+            for (auto j = 0U; j < freq; ++j)
                 if (r(g) < 1.0 / p)
                 {
                     ++c;
@@ -125,29 +123,37 @@ struct cms_morris final : public cms<T, unsigned char>
 
     virtual unsigned long query(T item)
     {
-        auto m = this->counters[this->hashes[0](item)];
-        for (int i = 1; i < this->d; ++i)
+        auto m = this->counters[this->hashes[0](item, this->w)];
+        for (auto i = 1UL; i < this->d; ++i)
         {
-            auto c = this->counters[i * this->w + this->hashes[i](item)];
+            auto c = this->counters[i * this->w + this->hashes[i](item, this->w)];
             if (c < m)
                 m = c;
         }
-        return 1UL << m - 1;
-    }
-protected:
-    virtual inline void init() override
-    {
-        auto t = this->d * this->w;
-        this->C = new unsigned long[t];
-        for (int i = 0; i < t; ++i)
-            this->C[i] = 1;
+        return (1UL << m) - 1;
     }
 private:
-    std::uniform_real_distribution<> r;
-    std::mt19937_64 g;
+    static std::uniform_real_distribution<> r;
+    static std::mt19937_64 g;
 };
+
+template<typename T>
+std::uniform_real_distribution<> cms_morris<T>::r = std::uniform_real_distribution<>();
+
+template<typename T>
+std::mt19937_64 cms_morris<T>::g = std::mt19937_64();
 
 int main()
 {
+    constexpr double epsilon = 0.01, delta = 0.01;
+    cms_default<int> cms1(epsilon, delta);
+    cms_conservative<int> cms2(epsilon, delta);
+    cms_morris<int> cms3(epsilon, delta);
+
+    std::cout << "Memory Footprint" << std::endl
+              << "CMS Default: " << sizeof(cms1) + cms1.memory_allocated() << std::endl
+              << "CMS Conservative: " << sizeof(cms2) + cms2.memory_allocated() << std::endl
+              << "CMS Morris: " << sizeof(cms3) + cms3.memory_allocated() << std::endl;
+
     return 0;
 }
