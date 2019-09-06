@@ -36,22 +36,21 @@ template<typename T>
 std::mt19937 hash<T>::g = std::mt19937();
 
 template<typename T, typename C>
-struct cms
+struct cms_template
 {
-    cms(double epsilon, double delta) : counters(new C[w * d]()),
-                                        hashes(new hash<T>[d]()),
-                                        d(ceil(log(1 / delta))),
-                                        w(ceil(2 / epsilon / epsilon)) {}
+    cms_template(double epsilon, double delta) : counters(new C[w * d]()),
+                                                 hashes(new hash<T>[d]()),
+                                                 d(ceil(log(1 / delta))),
+                                                 w(ceil(2 / epsilon / epsilon)) {}
 
-    cms(cms const &) = delete;
-    cms & operator=(cms const &) = delete;
+    cms_template(cms_template const &) = delete;
 
     virtual std::size_t memory_allocated() const final
     {
         return sizeof(hash<T>) * d + sizeof(C) * d * w;
     }
 
-    virtual ~cms()
+    virtual ~cms_template()
     {
         delete[] hashes;
         delete[] counters;
@@ -66,9 +65,14 @@ protected:
 };
 
 template<typename T>
-struct cms_default : public cms<T, unsigned long>
+struct cms_default : public cms_template<T, unsigned long>
 {
-    explicit cms_default(double epsilon, double delta) : cms<T, unsigned long>(epsilon, delta) {}
+    static inline constexpr std::string name()
+    {
+        return std::string("Default<") + typeid(T).name() + ">";
+    }
+
+    explicit cms_default(double epsilon, double delta) : cms_template<T, unsigned long>(epsilon, delta) {}
 
     virtual void update(T item, std::size_t freq)
     {
@@ -92,6 +96,11 @@ struct cms_default : public cms<T, unsigned long>
 template<typename T>
 struct cms_conservative final : public cms_default<T>
 {
+    static inline constexpr std::string name()
+    {
+        return std::string("Conservative<") + typeid(T).name() + ">";
+    }
+
     explicit cms_conservative(double epsilon, double delta) : cms_default<T>(epsilon, delta) {}
 
     virtual void update(T item, std::size_t freq) override
@@ -107,9 +116,14 @@ struct cms_conservative final : public cms_default<T>
 };
 
 template<typename T>
-struct cms_morris final : public cms<T, unsigned char>
+struct cms_morris final : public cms_template<T, unsigned char>
 {
-    explicit cms_morris(double epsilon, double delta) : cms<T, unsigned char>(epsilon, delta) {}
+    static inline constexpr std::string name()
+    {
+        return std::string("Morris<") + typeid(T).name() + ">";
+    }
+
+    explicit cms_morris(double epsilon, double delta) : cms_template<T, unsigned char>(epsilon, delta) {}
 
     virtual void update(T item, std::size_t freq) override
     {
@@ -154,8 +168,9 @@ struct stat final
 
     stat(double accuracy, double time) : time(time), accuracy(accuracy) {}
 
+    // allow copy and move
     stat(stat const &) = default;
-    stat & operator=(stat const &) = default;
+    stat(stat &&) = default;
 
     stat operator+(stat const & o) const
     {
@@ -177,23 +192,40 @@ struct cms_test_stat final
     cms_test_stat(double epsilon, double delta) : delta(delta), epsilon(epsilon) {}
 
     void run() {
+        auto ri = std::uniform_int_distribution<T>(std::numeric_limits<T>::min()),
+             rf = std::uniform_int_distribution<std::size_t>(0, 100);
+        auto g = std::mt19937();
+
+        auto items = std::array<T, stream_size>(), freqs = std::array<std::size_t, stream_size>();
+        for (std::size_t i = 0; i < stream_size; ++i)
+        {
+            items[i] = ri(g);
+            freqs[i] = rf(g);
+        }
+
+        auto counter = std::unordered_map<int, std::size_t>();
+        for (std::size_t i = 0; i < stream_size; ++i)
+            counter[items[i]] += freqs[i];
+
+        (single_test<CMSs>(items, freqs, counter), ...);
     }
 private:
     double const epsilon, delta;
 
     template<typename CMS>
-    inline stat single_test(std::array<T, stream_size> const & items,
+    inline void single_test(std::array<T, stream_size> const & items,
                             std::array<std::size_t, stream_size> const & freqs,
                             std::unordered_map<int, std::size_t> const & counter) const
     {
-        CMS cms(epsilon, delta);
-        std::cout << "CMS Default:" << std::endl
-                  << "    memory: " << cms.memory_allocated() << std::endl;
+        std::cout << "CMS " << CMS::name() << ":" << std::endl
+                  << "    memory: " << CMS(epsilon, delta).memory_allocated() << std::endl;
 
-        for (std::size_t i = 0; i < stream_size; ++i)
-            cms.update(items[i], freqs[i]);
-
-        return stat(0, 0, 0);
+        // for (std::size_t i = 0; i < stream_size; ++i)
+        //     cms.update(items[i], freqs[i]);
+        stat overall;
+        #pragma omp parallel for reduction(+:overall)
+        for (std::size_t i = 0; i < run_num; ++i)
+        {}
     }
 };
 
@@ -204,7 +236,7 @@ int main()
     cms_conservative<int> cms2(epsilon, delta);
     cms_morris<int> cms3(epsilon, delta);
 
-    cms_test_stat<int, 10000, 100, cms_default<int>>(0.01, 0.01).run();
+    cms_test_stat<int, 10000, 256, cms_default<int>, cms_conservative<int>, cms_morris<int>>(0.01, 0.01).run();
 
     return 0;
 }
