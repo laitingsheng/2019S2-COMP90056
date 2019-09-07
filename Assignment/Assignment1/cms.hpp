@@ -4,6 +4,27 @@
 #include "hash.hpp"
 #include "morris.hpp"
 
+template<typename>
+struct type_name;
+
+template<>
+struct type_name<std::string> final
+{
+    static inline constexpr char const * name()
+    {
+        return "std::string";
+    }
+};
+
+template<>
+struct type_name<int> final
+{
+    static inline constexpr char const * name()
+    {
+        return "int";
+    }
+};
+
 template<typename Type, typename CounterType = std::size_t>
 struct cms_template
 {
@@ -59,7 +80,7 @@ struct cms_default : public cms_template<Type>
 {
     static inline constexpr std::string name()
     {
-        return std::string("Default<") + typeid(Type).name() + ">";
+        return std::string("Default<") + type_name<Type>::name() + ">";
     }
 
     explicit cms_default(double epsilon, double delta) : cms_template<Type>(epsilon, delta) {}
@@ -70,7 +91,7 @@ struct cms_conservative : public cms_default<Type>
 {
     static inline constexpr std::string name()
     {
-        return std::string("Conservative<") + typeid(Type).name() + ">";
+        return std::string("Conservative<") + type_name<Type>::name() + ">";
     }
 
     explicit cms_conservative(double epsilon, double delta) : cms_default<Type>(epsilon, delta) {}
@@ -92,7 +113,7 @@ struct cms_morris : public cms_template<Type, morris_counter>
 {
     static inline constexpr std::string name()
     {
-        return std::string("Morris<") + typeid(Type).name() + ">";
+        return std::string("Morris<") + type_name<Type>::name() + ">";
     }
 
     explicit cms_morris(double epsilon, double delta) : cms_template<Type, morris_counter>(epsilon, delta) {}
