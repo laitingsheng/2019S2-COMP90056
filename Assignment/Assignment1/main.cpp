@@ -11,12 +11,12 @@
 #include "cms.hpp"
 #include "hash.hpp"
 
-template<typename T, std::size_t stream_size, std::size_t freq_min, std::size_t freq_max>
+template<typename T, std::size_t stream_size>
 struct stream_generator final
 {
     std::tuple<std::array<std::pair<T, std::size_t>, stream_size>,
                std::unordered_map<T, std::size_t>,
-               std::size_t> operator()()
+               std::size_t> operator()(std::size_t freq_min, std::size_t freq_max)
     {
         // only applicable to integer type
         auto ri = std::uniform_int_distribution<T>(std::numeric_limits<T>::min());
@@ -28,7 +28,7 @@ struct stream_generator final
             i = { ri(g), rf(g) };
 
         std::unordered_map<T, std::size_t> counter;
-        for (auto [k, v] : stream)
+        for (auto const & [k, v] : stream)
             counter[k] += v;
 
         size_t c = 0;
@@ -45,17 +45,16 @@ struct stream_generator final
     }
 };
 
-template<std::size_t stream_size, std::size_t freq_min, std::size_t freq_max>
-struct stream_generator<std::string, stream_size, freq_min, freq_max> final
+template<std::size_t stream_size>
+struct stream_generator<std::string, stream_size> final
 {
     std::tuple<std::array<std::pair<std::string, std::size_t>, stream_size>,
                std::unordered_map<std::string, std::size_t>,
-               std::size_t> operator()()
+               std::size_t> operator()(std::size_t freq_min, std::size_t freq_max)
     {
         // all ASCII printable characters
         auto ri = std::uniform_int_distribution<char>(32, 126);
-        auto rf = std::uniform_int_distribution<std::size_t>(freq_min, freq_max),
-             rs = std::uniform_int_distribution<std::size_t>(6, 12);
+        auto rf = std::uniform_int_distribution<std::size_t>(freq_min, freq_max);
         auto g = std::random_device();
 
         std::unordered_set<std::string> strings;
@@ -63,7 +62,7 @@ struct stream_generator<std::string, stream_size, freq_min, freq_max> final
         std::array<std::pair<std::string, std::size_t>, stream_size> stream;
         for (auto & i : stream)
         {
-            std::string str(rs(g), 0);
+            std::string str(rf(g), 0);
             for (char & c : str)
                 c = ri(g);
             i = { str, rf(g) };
@@ -71,7 +70,7 @@ struct stream_generator<std::string, stream_size, freq_min, freq_max> final
         }
 
         std::unordered_map<std::string, std::size_t> counter;
-        for (auto & [k, v] : stream)
+        for (auto const & [k, v] : stream)
             counter[k] += v;
 
         size_t c = 0;
@@ -84,7 +83,7 @@ struct stream_generator<std::string, stream_size, freq_min, freq_max> final
                 c += s;
         }
         c *= sizeof(std::pair<std::string, std::size_t>);
-        for (auto & s : strings)
+        for (auto const & s : strings)
             c += s.size();
 
         return { stream, counter, c };
@@ -96,9 +95,9 @@ struct cms_test_stat final
 {
     cms_test_stat(double epsilon, double delta) : delta(delta), epsilon(epsilon) {}
 
-    void run()
+    void run(size_t freq_min, size_t freq_max)
     {
-        auto [stream, counter, size] = stream_generator<T, stream_size, 0, 100>()();
+        auto [stream, counter, size] = stream_generator<T, stream_size>()(freq_min, freq_max);
         std::cout << "Counter Memory Usage (Estimate): " << size << " Bytes" << std::endl;
 
         (single_test<CMSs>(stream, counter), ...);
@@ -139,13 +138,21 @@ private:
     }
 };
 
+template<typename T, std::size_t stream_size, std::size_t run_num, std::size_t freq_min, std::size_t freq_max>
+void test(double epsilon, double delta)
+{
+    cms_test_stat<T,
+                  stream_size,
+                  run_num,
+                  cms_default<T>,
+                  cms_conservative<T>,
+                  cms_morris<T>>(epsilon, delta).run(freq_min, freq_max);
+}
+
 int main()
 {
-    cms_test_stat<int, 10000, 80, cms_default<int>, cms_conservative<int>, cms_morris<int>>(0.01, 0.01).run();
-    cms_test_stat<std::string, 10000, 80,
-                  cms_default<std::string>,
-                  cms_conservative<std::string>,
-                  cms_morris<std::string>>(0.01, 0.01).run();
-
+    test<int, 10000, 80, 100, 200>(0.01, 0.01);
+    test<std::string, 10000, 80, 100, 200>(0.01, 0.01);
+    test<std::string, 10000, 80, 200, 300>(0.01, 0.01);
     return 0;
 }
