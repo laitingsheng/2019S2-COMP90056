@@ -1,16 +1,19 @@
-main: main.cpp cms.hpp hash.hpp morris.hpp
+out/main: main.cpp cms.hpp hash.hpp morris.hpp
+	mkdir -p out
 	g++ -std=c++17 -fopenmp -O3 -Wall -Wpedantic -Wno-reorder -Werror -o $@ $^
 
 part1: part1.tex
-	pdflatex -jobname=$@ $^
+	mkdir -p out
+	pdflatex -output-directory=out -jobname=$@ $^
 
 report: report.tex
+	mkdir -p out
 	pdflatex -jobname=$@ $^
 
-cms.zip:
-	zip -u9 $@ *.hpp *.cpp Makefile
+cms.zip: main.cpp cms.hpp hash.hpp morris.hpp
+	zip -u9 $@ $^ Makefile
 
-.PHONY: clean submission
+.PHONY: clean
 
 clean:
-	rm -f main report.aux report.log report.out report.pdf submission.zip
+	rm -rf out
