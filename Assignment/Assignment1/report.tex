@@ -1,0 +1,33 @@
+\documentclass[a4paper]{article}
+\usepackage[margin=0.5in]{geometry}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\title{\textbf{COMP90056 Assignment A}}
+\author{Tingsheng (Tinson) Lai (731319)}
+\date{2019}
+
+\begin{document}
+    \maketitle
+    \section{Part 1}
+        As we are using a single hash function from a 2-universal hash family and the bitmap width is $r$, for a single item in the stream, the probability of a cell in the bitmap remains false is
+        $$1 - \frac{1}{r}$$
+        By the property of independence, after the $m$-th item in the stream (i.e., the end of the stream), it becomes
+        $$\left( 1 - \frac{1}{r} \right)^m$$
+        If an item is reported to be in the stream but it was not actually in the stream, it means such cell was changed to false beforehand, thus the probability of false positive is
+        $$1 - \left( 1 - \frac{1}{r} \right)^m \leq 1 - e^{-\frac{m}{r}}$$
+        By introducing the parameter $\epsilon > 0$, we let
+        $$1 - e^{-\frac{m}{r}} \leq \epsilon$$
+        Solving the inequality, $r$ needs to satisfy that
+        \begin{equation*}
+            \begin{split}
+                1 - e^{-\frac{m}{r}} & \leq \epsilon \\
+                e^{-\frac{m}{r}} & \geq 1 - \epsilon \\
+                -\frac{m}{r} & \geq \log{\left( 1 - \epsilon \right)} \\
+                r & \geq \frac{m}{-\log\left( 1 - \epsilon \right)} \\
+            \end{split}
+        \end{equation*}
+        to achieve the goal.
+    \section{Part 2}
+\end{document}
