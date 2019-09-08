@@ -1,8 +1,6 @@
 /main
-/part1.aux
-/part1.log
-/part1.out
-/report.aux
-/report.log
-/report.out
+!/part1.tex
+!/report.tex
+/part1.*
+/report.*
 /cms.zip
