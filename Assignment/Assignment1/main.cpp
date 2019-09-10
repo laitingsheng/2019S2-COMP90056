@@ -32,7 +32,7 @@ struct stream_generator final
             counter[k] += v;
 
         size_t c = 0;
-        for (size_t i = 0; i < counter.bucket_count(); ++i)
+        for (std::size_t i = 0; i < counter.bucket_count(); ++i)
         {
             auto s = counter.bucket_size(i);
             if (s == 0)
@@ -73,8 +73,8 @@ struct stream_generator<std::string, stream_size> final
         for (auto const & [k, v] : stream)
             counter[k] += v;
 
-        size_t c = 0;
-        for (size_t i = 0; i < counter.bucket_count(); ++i)
+        std::size_t c = 0;
+        for (std::size_t i = 0; i < counter.bucket_count(); ++i)
         {
             auto s = counter.bucket_size(i);
             if (s == 0)
@@ -95,7 +95,7 @@ struct cms_test_stat final
 {
     cms_test_stat(double epsilon, double delta) : delta(delta), epsilon(epsilon) {}
 
-    void run(size_t freq_min, size_t freq_max)
+    void run(std::size_t freq_min, std::size_t freq_max)
     {
         auto [stream, counter, size] = stream_generator<T, stream_size>()(freq_min, freq_max);
         std::cout << "Counter Memory Usage (Estimate): " << size << " Bytes" << std::endl;
@@ -123,7 +123,7 @@ private:
             for (auto & [k, v] : counter)
             {
                 double s = omp_get_wtime();
-                size_t c = cms.query(k);
+                std::size_t c = cms.query(k);
                 double e = omp_get_wtime();
                 time += e - s;
                 if (c >= v * lb && c <= v * ub)

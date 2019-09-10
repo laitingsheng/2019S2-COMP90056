@@ -10,22 +10,20 @@ struct type_name;
 template<>
 struct type_name<std::string> final
 {
-    static inline constexpr char const * name()
-    {
-        return "std::string";
-    }
+    type_name() = delete;
+
+    static constexpr auto name = "std::string";
 };
 
 template<>
 struct type_name<int> final
 {
-    static inline constexpr char const * name()
-    {
-        return "int";
-    }
+    type_name() = delete;
+
+    static constexpr auto name = "int";
 };
 
-template<typename Type, typename CounterType = std::size_t>
+template<typename Type, typename CounterType = std::size_t, typename QueryType = CounterType>
 struct cms_template
 {
     // prevent copy and move
@@ -53,12 +51,12 @@ struct cms_template
             this->counters[i * this->w + this->hashes[i](item, this->w)] += freq;
     }
 
-    virtual std::size_t query(Type item) const
+    virtual QueryType query(Type item) const
     {
-        std::size_t m = this->counters[this->hashes[0](item, this->w)];
+        QueryType m = this->counters[this->hashes[0](item, this->w)];
         for (auto i = 1UL; i < this->d; ++i)
         {
-            std::size_t c = this->counters[i * this->w + this->hashes[i](item, this->w)];
+            QueryType c = this->counters[i * this->w + this->hashes[i](item, this->w)];
             if (c < m)
                 m = c;
         }
@@ -75,26 +73,26 @@ protected:
                                                  w(ceil(2 / epsilon / epsilon)) {}
 };
 
-template<typename Type>
+template<typename Type, typename CounterType = std::size_t>
 struct cms_default : public cms_template<Type>
 {
     static inline constexpr std::string name()
     {
-        return std::string("Default<") + type_name<Type>::name() + ">";
+        return std::string("Default<") + type_name<Type>::name + ">";
     }
 
-    explicit cms_default(double epsilon, double delta) : cms_template<Type>(epsilon, delta) {}
+    explicit cms_default(double epsilon, double delta) : cms_template<Type, CounterType>(epsilon, delta) {}
 };
 
-template<typename Type>
+template<typename Type, typename CounterType = std::size_t>
 struct cms_conservative : public cms_default<Type>
 {
     static inline constexpr std::string name()
     {
-        return std::string("Conservative<") + type_name<Type>::name() + ">";
+        return std::string("Conservative<") + type_name<Type>::name + ">";
     }
 
-    explicit cms_conservative(double epsilon, double delta) : cms_default<Type>(epsilon, delta) {}
+    explicit cms_conservative(double epsilon, double delta) : cms_default<Type, CounterType>(epsilon, delta) {}
 
     virtual void update(Type item, std::size_t freq) override
     {
@@ -109,14 +107,15 @@ struct cms_conservative : public cms_default<Type>
 };
 
 template<typename Type>
-struct cms_morris : public cms_template<Type, morris_counter>
+struct cms_morris : public cms_template<Type, morris_counter, std::size_t>
 {
     static inline constexpr std::string name()
     {
-        return std::string("Morris<") + type_name<Type>::name() + ">";
+        return std::string("Morris<") + type_name<Type>::name + ">";
     }
 
-    explicit cms_morris(double epsilon, double delta) : cms_template<Type, morris_counter>(epsilon, delta) {}
+    explicit cms_morris(double epsilon, double delta) : cms_template<Type, morris_counter, std::size_t>(epsilon, delta)
+    {}
 };
 
 #endif
