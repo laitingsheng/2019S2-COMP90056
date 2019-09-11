@@ -3,25 +3,7 @@
 
 #include "hash.hpp"
 #include "morris.hpp"
-
-template<typename>
-struct type_name;
-
-template<>
-struct type_name<std::string> final
-{
-    type_name() = delete;
-
-    static constexpr auto name = "std::string";
-};
-
-template<>
-struct type_name<int> final
-{
-    type_name() = delete;
-
-    static constexpr auto name = "int";
-};
+#include "utils.hpp"
 
 template<typename Type, typename CounterType = std::size_t, typename QueryType = CounterType>
 struct cms_template
@@ -45,13 +27,13 @@ struct cms_template
         counters = nullptr;
     }
 
-    virtual void update(Type item, std::size_t freq)
+    virtual void update(Type item, QueryType freq)
     {
         for (auto i = 0UL; i < this->d; ++i)
             this->counters[i * this->w + this->hashes[i](item, this->w)] += freq;
     }
 
-    virtual QueryType query(Type item) const
+    virtual QueryType query(Type item) const final
     {
         QueryType m = this->counters[this->hashes[0](item, this->w)];
         for (auto i = 1UL; i < this->d; ++i)
@@ -70,11 +52,11 @@ protected:
     cms_template(double epsilon, double delta) : counters(new CounterType[w * d]()),
                                                  hashes(new hash<Type>[d]()),
                                                  d(ceil(log(1 / delta))),
-                                                 w(ceil(2 / epsilon / epsilon)) {}
+                                                 w(ceil(2 / epsilon)) {}
 };
 
 template<typename Type, typename CounterType = std::size_t>
-struct cms_default : public cms_template<Type>
+struct cms_default : public cms_template<Type, CounterType>
 {
     static inline constexpr std::string name()
     {
@@ -85,7 +67,7 @@ struct cms_default : public cms_template<Type>
 };
 
 template<typename Type, typename CounterType = std::size_t>
-struct cms_conservative : public cms_default<Type>
+struct cms_conservative : public cms_default<Type, CounterType>
 {
     static inline constexpr std::string name()
     {
@@ -94,7 +76,7 @@ struct cms_conservative : public cms_default<Type>
 
     explicit cms_conservative(double epsilon, double delta) : cms_default<Type, CounterType>(epsilon, delta) {}
 
-    virtual void update(Type item, std::size_t freq) override
+    virtual void update(Type item, CounterType freq) override
     {
         auto f = this->query(item) + freq;
         for (auto i = 0UL; i < this->d; ++i)

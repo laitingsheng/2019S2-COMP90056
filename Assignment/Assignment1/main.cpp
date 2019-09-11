@@ -1,158 +1,159 @@
-#include <array>
+#include <chrono>
 #include <iomanip>
 #include <iostream>
-#include <random>
 #include <unordered_map>
-#include <unordered_set>
-#include <utility>
-
-#include <omp.h>
 
 #include "cms.hpp"
 #include "hash.hpp"
+#include "utils.hpp"
 
-template<typename T, std::size_t stream_size>
-struct stream_generator final
+template<typename Type, typename UpdateType>
+struct stream
 {
-    std::tuple<std::array<std::pair<T, std::size_t>, stream_size>,
-               std::unordered_map<T, std::size_t>,
-               std::size_t> operator()(std::size_t freq_min, std::size_t freq_max)
+    using item_type = Type;
+    using update_type = UpdateType;
+
+    stream(UpdateType update_min, UpdateType update_max) : rf(update_min, update_max), g(std::random_device()()) {}
+
+    // prevent unintentional copy
+    stream(stream const &) = delete;
+
+    virtual std::pair<Type, UpdateType> operator++(int) final
     {
-        // only applicable to integer type
-        auto ri = std::uniform_int_distribution<T>(std::numeric_limits<T>::min());
-        auto rf = std::uniform_int_distribution<std::size_t>(freq_min, freq_max);
-        auto g = std::random_device();
-
-        std::array<std::pair<T, std::size_t>, stream_size> stream;
-        for (auto & i : stream)
-            i = { ri(g), rf(g) };
-
-        std::unordered_map<T, std::size_t> counter;
-        for (auto const & [k, v] : stream)
-            counter[k] += v;
-
-        size_t c = 0;
-        for (std::size_t i = 0; i < counter.bucket_count(); ++i)
-        {
-            auto s = counter.bucket_size(i);
-            if (s == 0)
-                ++c;
-            else
-                c += s;
-        }
-
-        return { stream, counter, c * sizeof(std::pair<T, std::size_t>) };
+        return { generate(), rf(g) };
     }
-};
-
-template<std::size_t stream_size>
-struct stream_generator<std::string, stream_size> final
-{
-    std::tuple<std::array<std::pair<std::string, std::size_t>, stream_size>,
-               std::unordered_map<std::string, std::size_t>,
-               std::size_t> operator()(std::size_t freq_min, std::size_t freq_max)
-    {
-        // all ASCII printable characters
-        auto ri = std::uniform_int_distribution<char>(32, 126);
-        auto rf = std::uniform_int_distribution<std::size_t>(freq_min, freq_max);
-        auto g = std::random_device();
-
-        std::unordered_set<std::string> strings;
-
-        std::array<std::pair<std::string, std::size_t>, stream_size> stream;
-        for (auto & i : stream)
-        {
-            std::string str(rf(g), 0);
-            for (char & c : str)
-                c = ri(g);
-            i = { str, rf(g) };
-            strings.insert(std::move(str));
-        }
-
-        std::unordered_map<std::string, std::size_t> counter;
-        for (auto const & [k, v] : stream)
-            counter[k] += v;
-
-        std::size_t c = 0;
-        for (std::size_t i = 0; i < counter.bucket_count(); ++i)
-        {
-            auto s = counter.bucket_size(i);
-            if (s == 0)
-                ++c;
-            else
-                c += s;
-        }
-        c *= sizeof(std::pair<std::string, std::size_t>);
-        for (auto const & s : strings)
-            c += s.size();
-
-        return { stream, counter, c };
-    }
-};
-
-template<typename T, std::size_t stream_size, std::size_t run_num, typename... CMSs>
-struct cms_test_stat final
-{
-    cms_test_stat(double epsilon, double delta) : delta(delta), epsilon(epsilon) {}
-
-    void run(std::size_t freq_min, std::size_t freq_max)
-    {
-        auto [stream, counter, size] = stream_generator<T, stream_size>()(freq_min, freq_max);
-        std::cout << "Counter Memory Usage (Estimate): " << size << " Bytes" << std::endl;
-
-        (single_test<CMSs>(stream, counter), ...);
-    }
+protected:
+    std::mt19937_64 g;
 private:
+    std::uniform_int_distribution<UpdateType> rf;
+
+    virtual Type generate() = 0;
+};
+
+template<typename IntType, typename UpdateType>
+struct int_stream final : stream<IntType, UpdateType>
+{
+    int_stream(IntType int_min,
+               IntType int_max,
+               UpdateType update_min,
+               UpdateType update_max) : ri(int_min, int_max), stream<IntType, UpdateType>(update_min, update_max) {}
+private:
+    std::uniform_int_distribution<IntType> ri;
+
+    virtual IntType generate()
+    {
+        return ri(this->g);
+    }
+};
+
+template<typename UpdateType>
+struct string_stream final : stream<std::string, UpdateType>
+{
+    string_stream(std::size_t length_min,
+                  std::size_t length_max,
+                  UpdateType update_min,
+                  UpdateType update_max) : rl(length_min, length_max),
+                                           rc(32, 126),
+                                           stream<std::string, UpdateType>(update_min, update_max){}
+private:
+    std::uniform_int_distribution<char> rc;
+    std::uniform_int_distribution<std::size_t> rl;
+
+    virtual std::string generate()
+    {
+        std::string re(rl(this->g), 0);
+        for (char & c : re)
+            c = rc(this->g);
+        return std::move(re);
+    }
+};
+
+template<typename StreamType>
+class stream_runner final
+{
+    using item_type = typename StreamType::item_type;
+    using update_type = typename StreamType::update_type;
+    using counter_type = std::unordered_map<item_type, update_type>;
+
     double const epsilon, delta;
 
     template<typename CMS>
-    inline void single_test(std::array<std::pair<T, std::size_t>, stream_size> const & stream,
-                            std::unordered_map<T, std::size_t> const & counter) const
+    void stat(CMS const & cms, counter_type const & counter)
     {
         std::cout << "CMS " << CMS::name() << ":" << std::endl
-                  << "    memory: " << CMS(epsilon, delta).memory_allocated() << " Bytes" << std::endl;
+                  << "    Memory (Estimate): " << cms.memory_allocated() << " Bytes" << std::endl;
 
-        double accuracy = 0, time = 0, lb = 1 - epsilon, ub = 1 + epsilon;
-        #pragma omp parallel for reduction(+:accuracy, time)
-        for (std::size_t i = 0; i < run_num; ++i)
+        std::size_t a = 0;
+        double time = 0;
+        for (auto & [k, v] : counter)
         {
-            CMS cms(epsilon, delta);
-            for (auto & [k, v] : stream)
-                cms.update(k, v);
-            std::size_t a = 0;
-            for (auto & [k, v] : counter)
-            {
-                double s = omp_get_wtime();
-                std::size_t c = cms.query(k);
-                double e = omp_get_wtime();
-                time += e - s;
-                if (c >= v * lb && c <= v * ub)
-                    ++a;
-            }
-            accuracy += double(a) / counter.size();
+            auto s = std::chrono::system_clock::now();
+            update_type c = cms.query(k);
+            auto e = std::chrono::system_clock::now();
+            a += (c == v);
+            time += std::chrono::duration<double>(e - s).count();
+        }
+        std::cout << std::fixed << std::setprecision(3)
+                  << "    Accuracy: " << double(a) / counter.size() * 100 << "%" << std::endl
+                  << "    Time: " << time * 1000 << " ms" << std::endl;
+    }
+public:
+    stream_runner(double epsilon, double delta) : delta(delta), epsilon(epsilon) {}
+
+    template<typename... CMSs>
+    void run(std::size_t stream_size, StreamType && stream, CMSs &&... cmss)
+    {
+        counter_type counter;
+        for (std::size_t i = 0; i < stream_size; ++i)
+        {
+            auto [item, update] = stream++;
+            counter[item] += update;
+            (cmss.update(item, update), ...);
         }
 
-        std::cout << std::fixed << std::setprecision(3)
-                  << "    accuracy: " << accuracy / run_num * 100 << "%" << std::endl
-                  << "    time: " << time / run_num * 1000 << " ms" << std::endl;
+        constexpr auto pair_size = type_size<item_type>::static_size + type_size<update_type>::static_size;
+        size_t c = 0;
+        for (size_t i = 0; i < counter.bucket_count(); ++i)
+        {
+            auto s = counter.bucket_size(i);
+            if (s == 0)
+                c += pair_size;
+            else
+                c += s * pair_size;
+        }
+        for (auto & [k, v] : counter)
+            c += type_size<item_type>::runtime_size(k) + type_size<update_type>::runtime_size(v);
+        std::cout << "Counter Memory Usage (Estimate): " << c << " Bytes" << std::endl;
+
+        (stat(cmss, counter), ...);
     }
 };
 
-template<typename T, std::size_t stream_size, std::size_t run_num, std::size_t freq_min, std::size_t freq_max>
-void test(double epsilon, double delta)
-{
-    cms_test_stat<T,
-                  stream_size,
-                  run_num,
-                  cms_default<T>,
-                  cms_conservative<T>,
-                  cms_morris<T>>(epsilon, delta).run(freq_min, freq_max);
-}
-
 int main()
 {
-    test<int, 10000, 80, 100, 200>(0.01, 0.01);
-    test<std::string, 10000, 80, 100, 200>(0.01, 0.01);
-    test<std::string, 10000, 80, 200, 300>(0.01, 0.01);
+    constexpr double epsilon = 0.01, delta = 0.01;
+    stream_runner<int_stream<int, std::size_t>>(epsilon, delta).run(100,
+                                                                    int_stream<int, std::size_t>(-10000,
+                                                                                                 10000,
+                                                                                                 200,
+                                                                                                 300),
+                                                                    cms_default<int, std::size_t>(epsilon, delta),
+                                                                    cms_conservative<int, std::size_t>(epsilon, delta),
+                                                                    cms_morris<int>(epsilon, delta));
+    stream_runner<string_stream<std::size_t>>(epsilon,
+                                              delta).run(100,
+                                                         string_stream<std::size_t>(20, 30, 200, 300),
+                                                         cms_default<std::string, std::size_t>(epsilon, delta),
+                                                         cms_conservative<std::string, std::size_t>(epsilon, delta),
+                                                         cms_morris<std::string>(epsilon, delta));
+    stream_runner<int_stream<int, long>>(epsilon, delta).run(100,
+                                                             int_stream<int, long>(-10000, 10000, -300, 300),
+                                                             cms_default<int, long>(epsilon, delta),
+                                                             cms_conservative<int, long>(epsilon, delta));
+    stream_runner<string_stream<long>>(epsilon,
+                                       delta).run(100,
+                                                  string_stream<long>(20, 30, -300, 300),
+                                                  cms_default<std::string, long>(epsilon, delta),
+                                                  cms_conservative<std::string, long>(epsilon, delta));
     return 0;
 }
