@@ -81,7 +81,7 @@ class stream_runner final
     void stat(CMS const & cms, counter_type const & counter)
     {
         std::cout << "CMS " << CMS::name() << ":" << std::endl
-                  << "    Memory (Estimate): " << cms.memory_allocated() << " Bytes" << std::endl;
+                  << "    Memory: " << sizeof(cms) + cms.memory_allocated() << " Bytes" << std::endl;
 
         std::size_t a = 0;
         double time = 0;
@@ -111,15 +111,14 @@ public:
             (cmss.update(item, update), ...);
         }
 
-        constexpr auto pair_size = type_size<item_type>::static_size + type_size<update_type>::static_size;
-        size_t c = 0;
-        for (size_t i = 0; i < counter.bucket_count(); ++i)
+        // count bucket size for accurate memory usage
+        constexpr auto pair_size = sizeof(std::pair<item_type, update_type>);
+        std::size_t c = sizeof(counter);
+        for (std::size_t i = 0; i < counter.bucket_count(); ++i)
         {
             auto s = counter.bucket_size(i);
-            if (s == 0)
-                c += pair_size;
-            else
-                c += s * pair_size;
+            // empty bucket will have at least one empty slot
+            c += (s == 0 ? 1 : s) * pair_size;
         }
         for (auto & [k, v] : counter)
             c += type_size<item_type>::runtime_size(k) + type_size<update_type>::runtime_size(v);
@@ -131,27 +130,28 @@ public:
 
 int main()
 {
+    constexpr std::size_t stream_size = 100;
     constexpr double epsilon = 0.01, delta = 0.01;
-    stream_runner<int_stream<int, std::size_t>>(epsilon, delta).run(100,
+    stream_runner<int_stream<int, std::size_t>>(epsilon, delta).run(stream_size,
                                                                     int_stream<int, std::size_t>(-10000,
                                                                                                  10000,
                                                                                                  200,
                                                                                                  300),
                                                                     cms_default<int, std::size_t>(epsilon, delta),
                                                                     cms_conservative<int, std::size_t>(epsilon, delta),
-                                                                    cms_morris<int>(epsilon, delta));
+                                                                    cms_morris<int, std::size_t>(epsilon, delta));
     stream_runner<string_stream<std::size_t>>(epsilon,
-                                              delta).run(100,
+                                              delta).run(stream_size,
                                                          string_stream<std::size_t>(20, 30, 200, 300),
                                                          cms_default<std::string, std::size_t>(epsilon, delta),
                                                          cms_conservative<std::string, std::size_t>(epsilon, delta),
-                                                         cms_morris<std::string>(epsilon, delta));
-    stream_runner<int_stream<int, long>>(epsilon, delta).run(100,
+                                                         cms_morris<std::string, std::size_t>(epsilon, delta));
+    stream_runner<int_stream<int, long>>(epsilon, delta).run(stream_size,
                                                              int_stream<int, long>(-10000, 10000, -300, 300),
                                                              cms_default<int, long>(epsilon, delta),
                                                              cms_conservative<int, long>(epsilon, delta));
     stream_runner<string_stream<long>>(epsilon,
-                                       delta).run(100,
+                                       delta).run(stream_size,
                                                   string_stream<long>(20, 30, -300, 300),
                                                   cms_default<std::string, long>(epsilon, delta),
                                                   cms_conservative<std::string, long>(epsilon, delta));

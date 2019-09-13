@@ -12,7 +12,7 @@ struct cms_template
     cms_template(cms_template const &) = delete;
     cms_template(cms_template &&) = delete;
 
-    virtual std::size_t memory_allocated() const final
+    virtual std::size_t memory_allocated() const
     {
         return sizeof(hash<Type>) * d + sizeof(CounterType) * d * w;
     }
@@ -33,7 +33,7 @@ struct cms_template
             this->counters[i * this->w + this->hashes[i](item, this->w)] += freq;
     }
 
-    virtual QueryType query(Type item) const final
+    virtual QueryType query(Type item) const
     {
         QueryType m = this->counters[this->hashes[0](item, this->w)];
         for (auto i = 1UL; i < this->d; ++i)
@@ -51,12 +51,12 @@ protected:
 
     cms_template(double epsilon, double delta) : counters(new CounterType[w * d]()),
                                                  hashes(new hash<Type>[d]()),
-                                                 d(ceil(log(1 / delta))),
+                                                 d(ceil(log2(1 / delta))),
                                                  w(ceil(2 / epsilon)) {}
 };
 
 template<typename Type, typename CounterType = std::size_t>
-struct cms_default : public cms_template<Type, CounterType>
+struct cms_default final : public cms_template<Type, CounterType>
 {
     static inline constexpr std::string name()
     {
@@ -67,14 +67,14 @@ struct cms_default : public cms_template<Type, CounterType>
 };
 
 template<typename Type, typename CounterType = std::size_t>
-struct cms_conservative : public cms_default<Type, CounterType>
+struct cms_conservative final : public cms_template<Type, CounterType>
 {
     static inline constexpr std::string name()
     {
         return std::string("Conservative<") + type_name<Type>::name + ">";
     }
 
-    explicit cms_conservative(double epsilon, double delta) : cms_default<Type, CounterType>(epsilon, delta) {}
+    explicit cms_conservative(double epsilon, double delta) : cms_template<Type, CounterType>(epsilon, delta) {}
 
     virtual void update(Type item, CounterType freq) override
     {
@@ -88,15 +88,30 @@ struct cms_conservative : public cms_default<Type, CounterType>
     }
 };
 
-template<typename Type>
-struct cms_morris : public cms_template<Type, morris_counter, std::size_t>
+template<typename Type, typename CounterType, bool=std::is_unsigned_v<CounterType>>
+struct cms_morris;
+
+template<typename Type, typename CounterType>
+struct cms_morris<Type, CounterType, true> final : public cms_template<Type, morris_counter, CounterType>
 {
     static inline constexpr std::string name()
     {
         return std::string("Morris<") + type_name<Type>::name + ">";
     }
 
-    explicit cms_morris(double epsilon, double delta) : cms_template<Type, morris_counter, std::size_t>(epsilon, delta)
+    explicit cms_morris(double epsilon, double delta) : cms_template<Type, morris_counter, CounterType>(epsilon, delta)
+    {}
+};
+
+template<typename Type, typename CounterType>
+struct cms_morris<Type, CounterType, false> final : public cms_template<Type, morris_counter, CounterType>
+{
+    static inline constexpr std::string name()
+    {
+        return std::string("Morris<") + type_name<Type>::name + ">";
+    }
+
+    explicit cms_morris(double epsilon, double delta) : cms_template<Type, morris_counter, CounterType>(epsilon, delta)
     {}
 };
 
