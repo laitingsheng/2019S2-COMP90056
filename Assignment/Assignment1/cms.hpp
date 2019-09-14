@@ -29,6 +29,9 @@ struct cms_template
 
     virtual void update(Type item, QueryType freq)
     {
+        if (!freq)
+            return;
+
         for (auto i = 0UL; i < this->d; ++i)
             this->counters[i * this->w + this->hashes[i](item, this->w)] += freq;
     }
@@ -88,31 +91,71 @@ struct cms_conservative final : public cms_template<Type, CounterType>
     }
 };
 
-template<typename Type, typename CounterType, bool=std::is_unsigned_v<CounterType>>
+template<typename Type, typename QueryType, bool = std::is_unsigned_v<QueryType>>
 struct cms_morris;
 
-template<typename Type, typename CounterType>
-struct cms_morris<Type, CounterType, true> final : public cms_template<Type, morris_counter, CounterType>
+template<typename Type, typename QueryType>
+struct cms_morris<Type, QueryType, true> final : public cms_template<Type, morris_counter, QueryType>
 {
     static inline constexpr std::string name()
     {
         return std::string("Morris<") + type_name<Type>::name + ">";
     }
 
-    explicit cms_morris(double epsilon, double delta) : cms_template<Type, morris_counter, CounterType>(epsilon, delta)
-    {}
+    explicit cms_morris(double epsilon, double delta) : cms_template<Type, morris_counter, QueryType>(epsilon, delta) {}
 };
 
-template<typename Type, typename CounterType>
-struct cms_morris<Type, CounterType, false> final : public cms_template<Type, morris_counter, CounterType>
+template<typename Type, typename QueryType>
+struct cms_morris<Type, QueryType, false> final : public cms_template<Type, morris_counter, QueryType>
 {
     static inline constexpr std::string name()
     {
         return std::string("Morris<") + type_name<Type>::name + ">";
     }
 
-    explicit cms_morris(double epsilon, double delta) : cms_template<Type, morris_counter, CounterType>(epsilon, delta)
-    {}
+    virtual std::size_t memory_allocated() const
+    {
+        return sizeof(hash<Type>) * this->d + sizeof(morris_counter) * this->d * this->w * 2;
+    }
+
+    explicit cms_morris(double epsilon, double delta) : counters_neg(new morris_counter[this->w * this->d]()),
+                                                        cms_template<Type, morris_counter, QueryType>(epsilon, delta) {}
+
+    virtual ~cms_morris()
+    {
+        delete[] counters_neg;
+        counters_neg = nullptr;
+    }
+
+    virtual void update(Type item, QueryType freq) override
+    {
+        if (!freq)
+            return;
+        if (freq < 0)
+            for (auto i = 0UL; i < this->d; ++i)
+                counters_neg[i * this->w + this->hashes[i](item, this->w)] += freq;
+        else
+            for (auto i = 0UL; i < this->d; ++i)
+                this->counters[i * this->w + this->hashes[i](item, this->w)] += freq;
+    }
+
+    virtual QueryType query(Type item) const override
+    {
+        auto h = this->hashes[0](item, this->w);
+        QueryType p = this->counters[h], n = counters_neg[h], m = p - n;
+        for (auto i = 1UL; i < this->d; ++i)
+        {
+            h = i * this->w + this->hashes[i](item, this->w);
+            p = this->counters[h];
+            n = counters_neg[h];
+            auto c = p - n;
+            if (c < m)
+                m = c;
+        }
+        return m;
+    }
+private:
+    morris_counter * counters_neg;
 };
 
 #endif

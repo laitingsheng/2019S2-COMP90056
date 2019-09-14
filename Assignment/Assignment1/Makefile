@@ -1,4 +1,4 @@
-SRC = main.cpp cms.hpp hash.hpp morris.hpp utils.hpp
+SRC = main.cpp cms.hpp hash.hpp morris.hpp stream.hpp utils.hpp
 
 main: $(SRC)
 	g++ -std=c++17 -O3 -Wall -Wpedantic -Wno-reorder -Werror -o $@ $^

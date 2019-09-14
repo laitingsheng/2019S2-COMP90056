@@ -9,7 +9,7 @@ static std::mt19937_64 g { std::random_device()() };
 
 struct morris_counter final
 {
-    morris_counter & operator+=(std::size_t freq)
+    inline morris_counter & operator+=(std::size_t freq)
     {
         auto p = 1UL << c;
         for (std::size_t i = 0; i < freq; ++i)
@@ -21,7 +21,7 @@ struct morris_counter final
         return *this;
     }
 
-    operator std::size_t() const
+    inline operator std::size_t() const
     {
         return (1UL << c) - 1;
     }
