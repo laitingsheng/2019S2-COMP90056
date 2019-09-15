@@ -15,11 +15,11 @@ struct type_name<std::string> final
 };
 
 template<>
-struct type_name<int> final
+struct type_name<long> final
 {
     type_name() = delete;
 
-    static inline constexpr auto name = "int";
+    static inline constexpr auto name = "long";
 };
 
 template<typename T>

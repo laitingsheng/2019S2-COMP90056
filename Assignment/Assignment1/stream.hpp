@@ -3,8 +3,13 @@
 
 #include <cstdint>
 
+#include <chrono>
+#include <iomanip>
+#include <iostream>
 #include <random>
 #include <unordered_map>
+
+#include "utils.hpp"
 
 template<typename Type, bool force_positive_update = true>
 class stream
@@ -18,12 +23,12 @@ class stream
     std::uniform_int_distribution<uint16_t> rs;
     std::uniform_int_distribution<UpdateType> rf;
 
+    virtual Type generate() = 0;
+protected:
     std::unordered_map<Type, std::pair<int32_t, uint16_t>> record;
     std::vector<Type> distinct;
     int64_t F1;
 
-    virtual Type generate() = 0;
-protected:
     std::mt19937_64 g;
 
     stream(uint16_t num_distinct,
@@ -36,28 +41,16 @@ protected:
                                     max_repeat(max_repeat),
                                     min_repeat(min_repeat),
                                     distinct(num_distinct),
-                                    record(num_distinct)
-    {
-        uint16_t i = 0;
-        while (i < num_distinct)
-        {
-            auto item = generate();
-            if (!record.count(item))
-            {
-                distinct[i++] = item;
-                record[std::move(item)] = {};
-            }
-        }
-    }
+                                    record(num_distinct) {}
 public:
     // prevent unintentional copy
     stream(stream const &) = delete;
 
-    virtual operator Counter() const final
+    virtual Counter counter() const final
     {
         Counter counter;
         for (auto const & [k, v] : record)
-            counter[k] = v.first();
+            counter[k] = v.first;
         return std::move(counter);
     }
 
@@ -119,6 +112,9 @@ class int_stream : public stream<IntType, force_positive_update>
         return ri(this->g);
     }
 public:
+    using item_type = IntType;
+    using update_type = int32_t;
+
     int_stream(uint16_t num_distinct,
                uint8_t min_repeat,
                uint8_t max_repeat,
@@ -130,10 +126,22 @@ public:
                                                                            min_repeat,
                                                                            max_repeat,
                                                                            min_update,
-                                                                           max_update) {}
+                                                                           max_update)
+    {
+        uint16_t i = 0;
+        while (i < num_distinct)
+        {
+            auto item = generate();
+            if (!this->record.count(item))
+            {
+                this->distinct[i++] = item;
+                this->record[std::move(item)] = {};
+            }
+        }
+    }
 };
 
-template<typename CMS>
+template<typename Counter, typename CMS>
 static void stat_single(CMS const & cms, Counter const & counter, double bound)
 {
     std::cout << "CMS " << CMS::name() << ":" << std::endl
@@ -164,11 +172,15 @@ void run_stream(double epsilon, StreamType && stream, CMSs &&... cmss)
         (cmss.update(k, v), ...);
     }
 
-    Counter counter = stream;
+    auto counter = stream.counter();
     int64_t F1 = stream;
 
+    using Counter = decltype(counter);
+    using item_type = typename Counter::key_type;
+    using update_type = typename Counter::mapped_type;
+
     // count bucket size for accurate memory usage
-    constexpr auto pair_size = sizeof(std::pair<item_type, update_type>);
+    constexpr auto pair_size = sizeof(typename Counter::value_type);
     size_t c = sizeof(counter);
     for (size_t i = 0; i < counter.bucket_count(); ++i)
     {
@@ -181,7 +193,7 @@ void run_stream(double epsilon, StreamType && stream, CMSs &&... cmss)
     std::cout << "Counter Memory Usage (Estimate): " << c << " Bytes" << std::endl;
 
     auto bound = epsilon * F1;
-    (stat_single(cmss, counter, bound), ...);
+    (stat_single<Counter>(cmss, counter, bound), ...);
 }
 
 #endif

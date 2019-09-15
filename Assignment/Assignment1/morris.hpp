@@ -1,6 +1,8 @@
 #ifndef __MORRIS_HPP__
 #define __MORRIS_HPP__
 
+#include <cstdint>
+
 #include <random>
 
 // share across all instantiations of template
@@ -9,10 +11,10 @@ static std::mt19937_64 g { std::random_device()() };
 
 struct morris_counter final
 {
-    inline morris_counter & operator+=(std::size_t freq)
+    inline morris_counter & operator+=(uint64_t freq)
     {
-        auto p = 1UL << c;
-        for (std::size_t i = 0; i < freq; ++i)
+        auto p = uint64_t(1) << c;
+        for (uint64_t i = 0; i < freq; ++i)
             if (r(g) < 1.0 / p)
             {
                 ++c;
@@ -26,7 +28,7 @@ struct morris_counter final
         return (1UL << c) - 1;
     }
 private:
-    unsigned char c = 0;
+    uint8_t c = 0;
 };
 
 #endif

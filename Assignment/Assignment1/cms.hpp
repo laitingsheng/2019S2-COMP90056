@@ -1,18 +1,20 @@
 #ifndef __CMS_HPP__
 #define __CMS_HPP__
 
+#include <cstdint>
+
 #include "hash.hpp"
 #include "morris.hpp"
 #include "utils.hpp"
 
-template<typename Type, typename CounterType = std::size_t, typename QueryType = CounterType>
+template<typename Type, typename CounterType = uint64_t, typename QueryType = CounterType>
 struct cms_template
 {
     // prevent copy and move
     cms_template(cms_template const &) = delete;
     cms_template(cms_template &&) = delete;
 
-    virtual std::size_t memory_allocated() const
+    virtual uint64_t memory_allocated() const
     {
         return sizeof(hash<Type>) * d + sizeof(CounterType) * d * w;
     }
@@ -48,7 +50,7 @@ struct cms_template
         return m;
     }
 protected:
-    std::size_t w, d;
+    uint64_t w, d;
     hash<Type> const * hashes;
     CounterType * counters;
 
@@ -58,9 +60,13 @@ protected:
                                                  w(ceil(2 / epsilon)) {}
 };
 
-template<typename Type, typename CounterType = std::size_t>
+template<typename Type, typename CounterType = uint64_t>
 struct cms_default final : public cms_template<Type, CounterType>
 {
+    using item_type = Type;
+    using counter_type = CounterType;
+    using query_type = counter_type;
+
     static inline constexpr std::string name()
     {
         return std::string("Default<") + type_name<Type>::name + ">";
@@ -69,9 +75,13 @@ struct cms_default final : public cms_template<Type, CounterType>
     explicit cms_default(double epsilon, double delta) : cms_template<Type, CounterType>(epsilon, delta) {}
 };
 
-template<typename Type, typename CounterType = std::size_t>
+template<typename Type, typename CounterType = uint64_t>
 struct cms_conservative final : public cms_template<Type, CounterType>
 {
+    using item_type = Type;
+    using counter_type = CounterType;
+    using query_type = counter_type;
+
     static inline constexpr std::string name()
     {
         return std::string("Conservative<") + type_name<Type>::name + ">";
@@ -90,6 +100,8 @@ struct cms_conservative final : public cms_template<Type, CounterType>
         }
     }
 };
+
+// TODO: Modify below
 
 template<typename Type, typename QueryType, bool = std::is_unsigned_v<QueryType>>
 struct cms_morris;

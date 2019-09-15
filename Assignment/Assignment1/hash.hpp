@@ -1,32 +1,42 @@
 #ifndef __HASH_HPP__
 #define __HASH_HPP__
 
+#include <cstdint>
+
 #include <functional>
 #include <random>
-
-// share across all instantiations of template
-static auto constexpr p = 1073741789U;
-static std::uniform_int_distribution<unsigned int> random_a(1, p - 1), random_b(0, p - 1);
-static std::mt19937_64 generator { std::random_device()() };
 
 template<typename Type>
 struct hash final
 {
-    hash() : b(random_b(generator)), a(random_a(generator)) {}
+    using item_type = Type;
+
+    hash() : b(rb(g)), a(ra(g)) {}
 
     // prevent unintentional copy
     hash(hash const &) = delete;
     hash & operator=(hash const &) = delete;
 
     // force cast back to std::size_t as defined in the STL
-    inline std::size_t operator()(Type item, std::size_t domain) const
+    inline uint64_t operator()(Type item, uint64_t domain) const
     {
         return (a * basic(item) + b) % p % domain;
     }
 private:
     static constexpr auto basic = std::hash<Type>();
 
-    unsigned int const a, b;
+    static inline constexpr uint64_t p = (uint64_t(1) << 31) - 1; // Mersenne prime number
+    static std::uniform_int_distribution<uint64_t> ra, rb;
+    static std::mt19937_64 g;
+
+    uint64_t const a, b;
 };
+
+template<typename Type>
+std::uniform_int_distribution<uint64_t> hash<Type>::ra { 1, p - 1 };
+template<typename Type>
+std::uniform_int_distribution<uint64_t> hash<Type>::rb { 0, p - 1 };
+template<typename Type>
+std::mt19937_64 hash<Type>::g { std::random_device()() };
 
 #endif
