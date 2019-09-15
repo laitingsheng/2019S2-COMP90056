@@ -1,3 +1,4 @@
+#include <iomanip>
 #include <iostream>
 
 #include "cms.hpp"
@@ -31,12 +32,16 @@ static void run_int_stream(double epsilon,
 
 int main()
 {
-    for (uint32_t i = 1000; i < 10000000U; i *= 10)
-    {
-        std::cout << "Number of distinct items in the stream: " << i << std::endl;
-        run_int_stream<int64_t>(0.01, 0.01, i, 3, 5, 0, 500, 0, 2 * i);
-        run_int_stream<int64_t, false>(0.01, 0.01, i, 3, 5, -500, 500, -int64_t(i), i);
-        std::cout << std::endl;
-    }
+    constexpr uint32_t sizes[] {1000, 10000, 100000};
+    constexpr double parameters[] {0.1, 0.01, 0.001};
+    for (auto i : sizes)
+        for (auto epsilon: parameters)
+            for (auto delta : parameters)
+            {
+                std::cout << i << " " << epsilon << " " << delta << std::endl;
+                run_int_stream<int64_t>(epsilon, delta, i, 10, 20, 0, 10, 0, 2 * i);
+                run_int_stream<int64_t, false>(epsilon, delta, i, 10, 20, -5, 5, -int64_t(i), i);
+                std::cout << std::endl;
+            }
     return 0;
 }

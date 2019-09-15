@@ -112,34 +112,43 @@ class int_stream final : public stream<IntType, force_positive_update>
             // empty bucket will have at least one empty slot
             c += (s == 0 ? 1 : s) * pair_size;
         }
-        std::cout << "Counter Memory Usage (Estimate): " << c << " Bytes" << std::endl;
+        std::cout << c << std::endl;
     }
 
     template<typename CMS>
     void measure(CMS & cms)
     {
-        std::cout << "CMS " << CMS::name() << ":" << std::endl
-                  << "    Memory: " << sizeof(cms) + cms.memory_allocated() << " Bytes" << std::endl;
-
-        auto bound = this->F1 * cms.epsilon;
+        std::cout << sizeof(cms) + cms.memory_allocated() << " ";
 
         std::make_unsigned_t<IntType> a = 0;
+        double min_diff = std::numeric_limits<double>::max(),
+               max_diff = std::numeric_limits<double>::min(),
+               sum_diff = 0;
         double time = 0;
         for (auto k = ri.min(); k <= ri.max(); ++k)
         {
             auto s = std::chrono::system_clock::now();
             auto c = cms.query(k);
             auto e = std::chrono::system_clock::now();
-            a += (c <= (this->record.count(k) ? this->record[k].first : 0) + bound);
+            double diff = (c - double(this->record.count(k) ? this->record[k].first : 0)) / this->F1;
+            sum_diff += diff;
+            if (diff < min_diff)
+                min_diff = diff;
+            if (diff > max_diff)
+                max_diff = diff;
+            a += diff <= cms.epsilon;
             time += std::chrono::duration<double>(e - s).count();
         }
 
         auto num = ri.max() - ri.min() + 1;
         double accuracy = double(a) / num;
-        std::cout << std::fixed << std::setprecision(3) << std::boolalpha
-                  << "    Accuracy: " << accuracy * 100 << " %" << std::endl
-                  << "    Query Time: " << time * 1000 << " ms" << std::endl
-                  << "    Passed: " << (accuracy >= 1 - cms.delta) << std::endl;
+        std::cout << std::setprecision(10) << std::boolalpha
+                  << sum_diff / num << " "
+                  << min_diff << " "
+                  << max_diff << " "
+                  << time * 1000 << " "
+                  << accuracy << " "
+                  << (accuracy >= 1 - cms.delta) << std::endl;
     }
 public:
     int_stream(uint32_t num_distinct,
@@ -192,8 +201,8 @@ void run_stream(StreamType && stream, CMSs &&... cmss)
 
     stream.stat();
 
-    size_t i = 0;
-    ((std::cout << CMSs::name() << std::endl << "    Update Time: " << times[i++] * 1000 << " ms" << std::endl), ...);
+    for (auto t : times)
+        std::cout << std::fixed << std::setprecision(3) << t * 1000 << std::endl;
 
     (stream.measure(cmss), ...);
 }

@@ -70,22 +70,12 @@ protected:
 template<typename Type, typename CounterType = uint64_t>
 struct cms_default final : public cms_template<Type, CounterType>
 {
-    inline static constexpr std::string name()
-    {
-        return std::string("cms_default_") + type_name<Type>::name + "_" + type_name<CounterType>::name;
-    }
-
     explicit cms_default(double epsilon, double delta) : cms_template<Type, CounterType>(epsilon, delta) {}
 };
 
 template<typename Type, typename CounterType = uint64_t>
 struct cms_conservative final : public cms_template<Type, CounterType>
 {
-    inline static constexpr std::string name()
-    {
-        return std::string("cms_conservative_") + type_name<Type>::name + "_" + type_name<CounterType>::name;
-    }
-
     explicit cms_conservative(double epsilon, double delta) : cms_template<Type, CounterType>(epsilon, delta) {}
 
     virtual void update(Type item, CounterType freq) override
@@ -106,22 +96,12 @@ struct cms_morris;
 template<typename Type, typename QueryType>
 struct cms_morris<Type, QueryType, true> final : public cms_template<Type, morris_counter, QueryType>
 {
-    inline static constexpr std::string name()
-    {
-        return std::string("cms_morris_") + type_name<Type>::name + "_" + type_name<QueryType>::name;
-    }
-
     explicit cms_morris(double epsilon, double delta) : cms_template<Type, morris_counter, QueryType>(epsilon, delta) {}
 };
 
 template<typename Type, typename QueryType>
 struct cms_morris<Type, QueryType, false> final : public cms_template<Type, morris_counter, QueryType>
 {
-    inline static constexpr std::string name()
-    {
-        return std::string("cms_morris_") + type_name<Type>::name + "_" + type_name<QueryType>::name;
-    }
-
     virtual std::size_t memory_allocated() const
     {
         return sizeof(hash<Type>) * this->d + sizeof(morris_counter) * this->d * this->w * 2;
