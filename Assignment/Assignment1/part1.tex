@@ -11,15 +11,19 @@
 \begin{document}
     \maketitle
     \section{Part 1}
-        For two elements, $x,y \in U$, false positive, one of the consequences caused by collisions, may occurs if and only if $x \in S$ and $y \in U \backslash S$. It means that after m updates from set $S$, the probability that choosing an element, $y \notin S$, from the universe which may lead to false positive is
+        To formulate the problem, let $y$ be an arbitrary element of the universe, $U$. The false positive rate can be expressed as a probability
+        $$Pr \left[ y \in U \backslash S \land \lor_{x \in S} \left( h(x) = h(y) \right) \right]$$
+        By Kolmogorov definition, it can be further decomposed into the product of two probabilities
+        $$Pr \left[ \lor_{x \in S} \left( h(x) = h(y) \right) | y \in U \backslash S \right] \cdot Pr \left[ y \in U \backslash S \right]$$
+        For the latter probability it is pretty simple, which is saying to draw an arbitrary item from the universe $U$ but it should not be an element of the subset $S$. So it is simply
         $$Pr \left[ y \in U \backslash S \right] = \frac{n - m}{n}$$
         Based on the universality property of 2-universal hash family, we know that
         $$\forall x, y \in U \ x \neq y \Rightarrow Pr \left[ h(x) = h(y) \right] \leq \frac{1}{r}$$
-        Continue using $y$ metioned before and let $c = h(y)$, by the property above, we can get that
+        Draw an arbitrary $y$ outside of the subset $S$ but within the universe $U$, and let $c = h(y)$. By the property above, we can get that
         $$\forall x \in S \  Pr \left[ h(x) = c \right] \leq \frac{1}{r}$$
-        Thus, after $m$ updates, the probability of collision raises to
+        Thus, after $m$ updates, the probability of collision, by the assumption of independence, raises to
         $$Pr \left[ \lor_{x \in S} \left( h(x) = c \right) \right] = \sum_{x \in S} Pr \left[ h(x) = c \right] \leq \frac{m}{r}$$
-        In another word
+        In another word, it is an conditional probability which is
         $$Pr \left[ \lor_{x \in S} \left( h(x) = h(y) \right) | y \in U \backslash S \right] \leq \frac{m}{r}$$
         Thus, the probability of false positive is
         $$Pr \left[ \lor_{x \in S} \left( h(x) = h(y) \right) \land y \in U \backslash S \right] = Pr \left[ \lor_{x \in S} \left( h(x) = h(y) \right) | y \in U \backslash S \right] \cdot Pr \left[ y \in U \backslash S \right] \leq \frac{(n - m)m}{r n}$$
