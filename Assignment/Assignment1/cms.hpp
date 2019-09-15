@@ -10,6 +10,8 @@
 template<typename Type, typename CounterType = uint64_t, typename QueryType = CounterType>
 struct cms_template
 {
+    double const epsilon, delta;
+
     // prevent copy and move
     cms_template(cms_template const &) = delete;
     cms_template(cms_template &&) = delete;
@@ -57,16 +59,14 @@ protected:
     cms_template(double epsilon, double delta) : counters(new CounterType[w * d]()),
                                                  hashes(new hash<Type>[d]()),
                                                  d(ceil(log2(1 / delta))),
-                                                 w(ceil(2 / epsilon)) {}
+                                                 w(ceil(2 / epsilon)),
+                                                 delta(delta),
+                                                 epsilon(epsilon) {}
 };
 
 template<typename Type, typename CounterType = uint64_t>
 struct cms_default final : public cms_template<Type, CounterType>
 {
-    using item_type = Type;
-    using counter_type = CounterType;
-    using query_type = counter_type;
-
     static inline constexpr std::string name()
     {
         return std::string("Default<") + type_name<Type>::name + ">";
@@ -78,10 +78,6 @@ struct cms_default final : public cms_template<Type, CounterType>
 template<typename Type, typename CounterType = uint64_t>
 struct cms_conservative final : public cms_template<Type, CounterType>
 {
-    using item_type = Type;
-    using counter_type = CounterType;
-    using query_type = counter_type;
-
     static inline constexpr std::string name()
     {
         return std::string("Conservative<") + type_name<Type>::name + ">";
@@ -100,8 +96,6 @@ struct cms_conservative final : public cms_template<Type, CounterType>
         }
     }
 };
-
-// TODO: Modify below
 
 template<typename Type, typename QueryType, bool = std::is_unsigned_v<QueryType>>
 struct cms_morris;
@@ -144,8 +138,11 @@ struct cms_morris<Type, QueryType, false> final : public cms_template<Type, morr
         if (!freq)
             return;
         if (freq < 0)
+        {
+            freq = -freq;
             for (auto i = 0UL; i < this->d; ++i)
                 counters_neg[i * this->w + this->hashes[i](item, this->w)] += freq;
+        }
         else
             for (auto i = 0UL; i < this->d; ++i)
                 this->counters[i * this->w + this->hashes[i](item, this->w)] += freq;

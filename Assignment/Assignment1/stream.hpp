@@ -15,24 +15,24 @@
 template<typename Type, bool force_positive_update = true>
 class stream
 {
-    using Counter = std::unordered_map<Type, std::conditional_t<force_positive_update, uint32_t, int32_t>>;
+    using Counter = std::unordered_map<Type, std::conditional_t<force_positive_update, uint64_t, int64_t>>;
     using UpdateType = std::conditional_t<force_positive_update, uint16_t, int16_t>;
 
     std::uniform_int_distribution<uint8_t> rb;
 
     uint8_t const min_repeat, max_repeat;
-    std::uniform_int_distribution<uint16_t> rs;
+    std::uniform_int_distribution<uint32_t> rs;
     std::uniform_int_distribution<UpdateType> rf;
 
     virtual Type generate() = 0;
 protected:
-    std::unordered_map<Type, std::pair<int32_t, uint16_t>> record;
+    std::unordered_map<Type, std::pair<int64_t, uint8_t>> record;
     std::vector<Type> distinct;
     int64_t F1;
 
     std::mt19937_64 g;
 
-    stream(uint16_t num_distinct,
+    stream(uint32_t num_distinct,
            uint8_t min_repeat,
            uint8_t max_repeat,
            UpdateType min_update,
@@ -47,14 +47,6 @@ public:
     // prevent unintentional copy
     stream(stream const &) = delete;
 
-    virtual Counter counter() const final
-    {
-        Counter counter;
-        for (auto const & [k, v] : record)
-            counter[k] = v.first;
-        return std::move(counter);
-    }
-
     virtual std::pair<Type, UpdateType> operator++(int) final
     {
         while (true)
@@ -63,7 +55,7 @@ public:
             auto & [f, r] = record[item];
             if (r == max_repeat)
                 continue;
-            int32_t freq;
+            int64_t freq;
             if constexpr (force_positive_update)
                 freq = rf(g);
             else
@@ -81,7 +73,6 @@ public:
             ++r;
             return { item, freq };
         }
-        throw "exceeding stream limit";
     }
 
     virtual bool operator!() const final
@@ -94,17 +85,15 @@ public:
         }
         return false;
     }
-
-    virtual operator int64_t() const final
-    {
-        return F1;
-    }
 };
 
 template<typename IntType, bool force_positive_update = true>
-class int_stream : public stream<IntType, force_positive_update>
+class int_stream final : public stream<IntType, force_positive_update>
 {
     using UpdateType = std::conditional_t<force_positive_update, uint16_t, int16_t>;
+
+    template<typename StreamType, typename... CMSs>
+    friend void run_stream(StreamType && stream, CMSs &&... cmss);
 
     std::uniform_int_distribution<IntType> ri;
 
@@ -112,11 +101,47 @@ class int_stream : public stream<IntType, force_positive_update>
     {
         return ri(this->g);
     }
-public:
-    using item_type = IntType;
-    using update_type = int32_t;
 
-    int_stream(uint16_t num_distinct,
+    void stat()
+    {
+        constexpr auto pair_size = sizeof(std::pair<IntType, int32_t>);
+        size_t c = sizeof(this->record);
+        for (size_t i = 0; i < this->record.bucket_count(); ++i)
+        {
+            auto s = this->record.bucket_size(i);
+            // empty bucket will have at least one empty slot
+            c += (s == 0 ? 1 : s) * pair_size;
+        }
+        std::cout << "Counter Memory Usage (Estimate): " << c << " Bytes" << std::endl;
+    }
+
+    template<typename CMS>
+    void measure(CMS & cms)
+    {
+        std::cout << "CMS " << CMS::name() << ":" << std::endl
+                  << "    Memory: " << sizeof(cms) + cms.memory_allocated() << " Bytes" << std::endl;
+
+        auto bound = this->F1 * cms.epsilon;
+
+        std::make_unsigned_t<IntType> a = 0;
+        double time = 0;
+        for (auto k = ri.min(); k <= ri.max(); ++k)
+        {
+            auto s = std::chrono::system_clock::now();
+            auto c = cms.query(k);
+            auto e = std::chrono::system_clock::now();
+            a += (c <= (this->record.count(k) ? this->record[k].first : 0) + bound);
+            time += std::chrono::duration<double>(e - s).count();
+        }
+
+        double accuracy = double(a) / (ri.max() - ri.min() + 1);
+        std::cout << std::fixed << std::setprecision(3)
+                  << "    Accuracy: " << accuracy * 100 << " %" << std::endl
+                  << "    Query Time: " << time * 1000 << " ms" << std::endl
+                  << "    Passed: " << (accuracy >= 1 - cms.delta ? "true" : "false") << std::endl;
+    }
+public:
+    int_stream(uint32_t num_distinct,
                uint8_t min_repeat,
                uint8_t max_repeat,
                UpdateType min_update,
@@ -129,7 +154,7 @@ public:
                                                                            min_update,
                                                                            max_update)
     {
-        uint16_t i = 0;
+        uint32_t i = 0;
         while (i < num_distinct)
         {
             auto item = generate();
@@ -142,59 +167,34 @@ public:
     }
 };
 
-template<typename Counter, typename CMS>
-static void stat_single(CMS const & cms, Counter const & counter, double bound)
+template<typename CMS, typename Type, typename UpdateType>
+static double time_update(CMS && cms, Type k, UpdateType v)
 {
-    std::cout << "CMS " << CMS::name() << ":" << std::endl
-              << "    Memory: " << sizeof(cms) + cms.memory_allocated() << " Bytes" << std::endl;
-
-    uint16_t a = 0;
-    double time = 0;
-    for (auto const & [k, v] : counter)
-    {
-        auto s = std::chrono::system_clock::now();
-        auto c = cms.query(k);
-        auto e = std::chrono::system_clock::now();
-        a += (c <= v + bound);
-        time += std::chrono::duration<double>(e - s).count();
-    }
-    std::cout << std::fixed << std::setprecision(3)
-                << "    Accuracy: " << double(a) / counter.size() * 100 << "%" << std::endl
-                << "    Time: " << time * 1000 << " ms" << std::endl;
-
+    auto s = std::chrono::system_clock::now();
+    cms.update(k, v);
+    auto e = std::chrono::system_clock::now();
+    return std::chrono::duration<double>(e - s).count();
 }
 
 template<typename StreamType, typename... CMSs>
-void run_stream(double epsilon, StreamType && stream, CMSs &&... cmss)
+void run_stream(StreamType && stream, CMSs &&... cmss)
 {
+    constexpr auto num = sizeof...(cmss);
+    double times[num] {};
     while (!stream)
     {
         auto [k, v] = stream++;
-        (cmss.update(k, v), ...);
+        double tmps[] { time_update(cmss, k, v)... };
+        for (size_t i = 0; i < num; ++i)
+            times[i] += tmps[i];
     }
 
-    auto counter = stream.counter();
-    int64_t F1 = stream;
+    stream.stat();
 
-    using Counter = decltype(counter);
-    using item_type = typename Counter::key_type;
-    using update_type = typename Counter::mapped_type;
+    size_t i = 0;
+    ((std::cout << CMSs::name() << std::endl << "    Update Time: " << times[i++] * 1000 << " ms" << std::endl), ...);
 
-    // count bucket size for accurate memory usage
-    constexpr auto pair_size = sizeof(typename Counter::value_type);
-    size_t c = sizeof(counter);
-    for (size_t i = 0; i < counter.bucket_count(); ++i)
-    {
-        auto s = counter.bucket_size(i);
-        // empty bucket will have at least one empty slot
-        c += (s == 0 ? 1 : s) * pair_size;
-    }
-    for (auto const & [k, v] : counter)
-        c += type_size<item_type>::runtime_size(k) + type_size<update_type>::runtime_size(v);
-    std::cout << "Counter Memory Usage (Estimate): " << c << " Bytes" << std::endl;
-
-    auto bound = epsilon * F1;
-    (stat_single<Counter>(cmss, counter, bound), ...);
+    (stream.measure(cmss), ...);
 }
 
 #endif

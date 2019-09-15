@@ -9,8 +9,6 @@
 template<typename Type>
 struct hash final
 {
-    using item_type = Type;
-
     hash() : b(rb(g)), a(ra(g)) {}
 
     // prevent unintentional copy
