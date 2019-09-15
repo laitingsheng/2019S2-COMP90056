@@ -7,14 +7,6 @@ template<typename>
 struct type_name;
 
 template<>
-struct type_name<std::string> final
-{
-    type_name() = delete;
-
-    static inline constexpr auto name = "std::string";
-};
-
-template<>
 struct type_name<long> final
 {
     type_name() = delete;
@@ -22,26 +14,12 @@ struct type_name<long> final
     static inline constexpr auto name = "long";
 };
 
-template<typename T>
-struct type_size final
-{
-    type_size() = delete;
-
-    static inline constexpr std::size_t runtime_size(T const &)
-    {
-        return 0;
-    }
-};
-
 template<>
-struct type_size<std::string> final
+struct type_name<unsigned long> final
 {
-    type_size() = delete;
+    type_name() = delete;
 
-    static inline std::size_t runtime_size(std::string const & s)
-    {
-        return s.size();
-    }
+    static inline constexpr auto name = "unsigned_long";
 };
 
 #endif

@@ -1,5 +1,5 @@
-\documentclass[a4paper]{article}
-\usepackage[margin=0.5in]{geometry}
+\documentclass[a4paper, 11pt]{article}
+\usepackage[margin=2cm]{geometry}
 \usepackage{hyperref}
 \usepackage{amsmath}
 \usepackage{amssymb}
@@ -11,7 +11,9 @@
 \begin{document}
     \maketitle
     \section{Introduction}
+    Count-Min Sketch is an introductory technique used in stream computing. Specifically, it is a probabilistic data structure for frequency counting returning a (potentially) accurate estimate. Traditionally, the well-known basic technique used for frequency counting is the hash table. It has comparatively fastest update and query process, and it always produces exact results. The only problem is that it needs to record the identities of all items in the stream of data to resolve problems incurred by collisions of hashes. This is considered to be a waste of space as we are not interested in the actual identities. This report will briefly examine the techniques introduced by the Count-Min Sketch to tackle the issues caused by randomness and how it can minimise the effect of hash collisions.
     \section{Theory}
+        As hash
         \begin{table}[!h]
             \centering
             \begin{tabular}{|c|c|c|c|}
@@ -29,7 +31,12 @@
             \label{table:comparison}
         \end{table}
     \section{Implementation}
-        Currently, I am using C++ (specifically, C++17) to complete the implementations for more sophisticated memory control.
+        The assignment was entirely implemented in C++17 as C++ provides sophisticated memory control, and we can get a more accurate estimate of the measurement of memory usage programmatically. The reason for it to be an accurate estimate instead of the exact result is that there are other negligible factors which may slightly increase the actual memory usage, such as alignment of data types. This is better than measuring the runtime memory directly as other significant factors, such as concurrent executions or memory management techniques, will affect the result severely. The hash functions are simply drawn from the 2-universal hash family. \\
+
+        \noindent One minor issue here is that it may not have the property of strong universality as two random variables share the same random number engine, Mersenne Twister generator, provided in the C++ Standard Template Library. I implemented this deliberately to boost the execution, and also it will be more similar to the random number generator in the provided stdlib.jar file for Java. This issue is almost irresolvable as most of the provided random number generators always use some forms of pseudo-random generation algorithm. Maybe we can consider using the random number generation API from random.org which claims to use the atmospheric noises to generate the random numbers. \\
+
+        \noindent The Count-Min Sketch variant with Morris counter is the most interesting implementation amongst all three implementations. The implementation is separately designed leveraging the power of the technique of template partial specialisation, and they can adapt to different models of stream, specifically, the cash-register model and turnstile model. To tackle the negative update in the turnstile stream, I introduced an extra counter for negative updates, whereas the normal counter (inherited from the base class) will only be used for positive updates. The consequence is double the space needed, but it is still far less than the Count-Min Sketch using regular numbers as counters.
     \section{Experimental Set Up}
+        As the technique of hash table is applied widely in the field of computer science and software engineering, it is well-known that the amortised time complexity of query and update in hash tables is $O \left( 1 \right)$ though some expensive operations such as rehashing and expansions may occur during insertion.
     \section{Results \& Discussion}
 \end{document}

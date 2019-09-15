@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "cms.hpp"
 #include "hash.hpp"
 #include "stream.hpp"
@@ -29,7 +31,12 @@ static void run_int_stream(double epsilon,
 
 int main()
 {
-    run_int_stream<int64_t>(0.01, 0.01, 100000, 3, 5, 0, 500, 0, 300000);
-    run_int_stream<int64_t, false>(0.01, 0.01, 100000, 3, 5, -500, 500, -150000, 150000);
+    for (uint32_t i = 1000; i < 10000000U; i *= 10)
+    {
+        std::cout << "Number of distinct items in the stream: " << i << std::endl;
+        run_int_stream<int64_t>(0.01, 0.01, i, 3, 5, 0, 500, 0, 2 * i);
+        run_int_stream<int64_t, false>(0.01, 0.01, i, 3, 5, -500, 500, -int64_t(i), i);
+        std::cout << std::endl;
+    }
     return 0;
 }

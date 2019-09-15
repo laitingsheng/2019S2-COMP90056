@@ -134,11 +134,12 @@ class int_stream final : public stream<IntType, force_positive_update>
             time += std::chrono::duration<double>(e - s).count();
         }
 
-        double accuracy = double(a) / (ri.max() - ri.min() + 1);
-        std::cout << std::fixed << std::setprecision(3)
+        auto num = ri.max() - ri.min() + 1;
+        double accuracy = double(a) / num;
+        std::cout << std::fixed << std::setprecision(3) << std::boolalpha
                   << "    Accuracy: " << accuracy * 100 << " %" << std::endl
                   << "    Query Time: " << time * 1000 << " ms" << std::endl
-                  << "    Passed: " << (accuracy >= 1 - cms.delta ? "true" : "false") << std::endl;
+                  << "    Passed: " << (accuracy >= 1 - cms.delta) << std::endl;
     }
 public:
     int_stream(uint32_t num_distinct,
