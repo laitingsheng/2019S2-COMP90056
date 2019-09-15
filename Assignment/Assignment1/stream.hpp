@@ -1,6 +1,7 @@
 #ifndef __STREAM_HPP__
 #define __STREAM_HPP__
 
+#include <cassert>
 #include <cstdint>
 
 #include <chrono>
@@ -14,7 +15,7 @@
 template<typename Type, bool force_positive_update = true>
 class stream
 {
-    using Counter = std::unordered_map<Type, int32_t>;
+    using Counter = std::unordered_map<Type, std::conditional_t<force_positive_update, uint32_t, int32_t>>;
     using UpdateType = std::conditional_t<force_positive_update, uint16_t, int16_t>;
 
     std::uniform_int_distribution<uint8_t> rb;
@@ -89,9 +90,9 @@ public:
         {
             auto const & [f, r] = v;
             if (r < min_repeat || f < 0)
-                return false;
+                return true;
         }
-        return true;
+        return false;
     }
 
     virtual operator int64_t() const final
@@ -154,7 +155,7 @@ static void stat_single(CMS const & cms, Counter const & counter, double bound)
         auto s = std::chrono::system_clock::now();
         auto c = cms.query(k);
         auto e = std::chrono::system_clock::now();
-        a += (c < v + bound);
+        a += (c <= v + bound);
         time += std::chrono::duration<double>(e - s).count();
     }
     std::cout << std::fixed << std::setprecision(3)
@@ -188,7 +189,7 @@ void run_stream(double epsilon, StreamType && stream, CMSs &&... cmss)
         // empty bucket will have at least one empty slot
         c += (s == 0 ? 1 : s) * pair_size;
     }
-    for (auto & [k, v] : counter)
+    for (auto const & [k, v] : counter)
         c += type_size<item_type>::runtime_size(k) + type_size<update_type>::runtime_size(v);
     std::cout << "Counter Memory Usage (Estimate): " << c << " Bytes" << std::endl;
 

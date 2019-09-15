@@ -1,7 +1,7 @@
 SRC = main.cpp cms.hpp hash.hpp morris.hpp stream.hpp utils.hpp
 
 main: $(SRC)
-	g++ -std=c++17 -O3 -Wall -Wpedantic -Wno-reorder -o $@ $^
+	g++ -std=c++17 -O3 -Wall -Wpedantic -Wno-reorder -Werror -o $@ $^
 
 part1: part1.tex
 	pdflatex -jobname=$@ $^

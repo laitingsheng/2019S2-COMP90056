@@ -30,5 +30,6 @@ static void run_int_stream(double epsilon,
 int main()
 {
     run_int_stream<int64_t>(0.01, 0.01, 1000, 3, 5, 0, 500);
+    run_int_stream<int64_t, false>(0.01, 0.01, 1000, 3, 5, -500, 500);
     return 0;
 }
