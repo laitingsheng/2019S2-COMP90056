@@ -9,7 +9,13 @@
 template<typename T>
 struct l0_insertion_sampler final
 {
-    l0_insertion_sampler(std::uint64_t n, double epsilon) : aref(nullptr), h(std::uint64_t(floor(log(1 / epsilon)))), m(n + 1), n(n) {}
+    l0_insertion_sampler(std::uint64_t n, double epsilon) : aref(nullptr), h(k), k(std::uint8_t(floor(log(1 / epsilon)))), m(n + 1), n(n) {}
+
+    l0_insertion_sampler(l0_insertion_sampler const &) = delete;
+    l0_insertion_sampler(l0_insertion_sampler && o) : aref(o.aref == nullptr ? nullptr : &a), a(o.a), h(std::move(o.h)), k(o.k), m(o.m), n(o.n) {}
+
+    l0_insertion_sampler & operator=(l0_insertion_sampler const &) = delete;
+    l0_insertion_sampler & operator=(l0_insertion_sampler &&) = delete;
 
     l0_insertion_sampler & operator+=(T x)
     {
@@ -29,6 +35,7 @@ struct l0_insertion_sampler final
     }
 private:
     std::uint64_t n, m;
+    std::uint8_t k;
     k_hash<T> h;
     T a, *aref;
 };

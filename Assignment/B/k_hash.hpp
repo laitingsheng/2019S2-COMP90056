@@ -17,17 +17,20 @@ struct k_hash final
 
     ~k_hash()
     {
-        delete[] coeffs;
-        coeffs = nullptr;
-        a = 0;
-        k = 0;
+        if (coeffs)
+        {
+            delete[] coeffs;
+        }
     }
 
     k_hash(k_hash const &) = delete;
-    k_hash(k_hash &&) = default;
+    k_hash(k_hash && o) : coeffs(o.coeffs), a(o.a), k(o.k)
+    {
+        o.coeffs = nullptr;
+    }
 
     k_hash & operator=(k_hash const &) = delete;
-    k_hash & operator=(k_hash &&) = default;
+    k_hash & operator=(k_hash && o) = delete;
 
     inline uint64_t operator()(T item) const
     {

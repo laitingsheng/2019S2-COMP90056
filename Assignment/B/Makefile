@@ -17,7 +17,7 @@ endef
 all: $(BIN_DIR)/a
 
 $(BIN_DIR)/a: a_main.cpp l.hpp k_hash.hpp
-	$(call compile_exe,$(BIN_DIR),$@,$^,-lboost_program_options)
+	$(call compile_exe,$(BIN_DIR),$@,$^,-lboost_program_options -fopenmp)
 
 tests: $(TEST_DIR)/k_hash_test
 	$(call execute_tests,$^)
