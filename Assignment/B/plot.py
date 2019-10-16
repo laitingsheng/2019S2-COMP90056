@@ -15,7 +15,7 @@ def plot(x, ry, sy, loc, index, name):
     fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
     ax1.bar(x, ry)
     ax2.bar(x, sy)
-    fig.savefig(f"{loc}/1-{name}.jpg")
+    fig.savefig(f"{loc}/{index}-{name}.jpg")
 
 
 def main(argv):
