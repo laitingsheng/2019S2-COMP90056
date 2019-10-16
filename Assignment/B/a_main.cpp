@@ -64,7 +64,6 @@ int main(int argc, char *argv[])
     std::vector<uint64_t> vs(r + 1), vl(r + 1);
     std::mt19937_64 g { std::random_device()() };
 
-    std::cout << "Running Uniform Distribution" << std::endl;
     std::uniform_int_distribution<std::uint64_t> ud(0, r);
     std::vector<l0_insertion_sampler<std::uint64_t>> ul0s;
     ul0s.reserve(t);
@@ -74,20 +73,17 @@ int main(int argc, char *argv[])
     {
         std::uint64_t v = ud(g);
         ++vs[v];
-        #pragma omp parallel for
         for (std::uint64_t j = 0; j < t; ++j)
             ul0s[j] += v;
     }
     for (std::uint64_t i = 0; i < t; ++i)
         ++vl[ul0s[i]];
     for (std::uint64_t i = 0; i <= r; ++i)
-        std::cout << "    " << vs[i] << " " << vl[i] << std::endl;
+        std::cout << i << " " << vs[i] << " " << vl[i] << std::endl;
 
     vs.clear();
     vl.clear();
-    std::cout << std::endl;
 
-    std::cout << "Running Binomial Distribution" << std::endl;
     std::binomial_distribution<std::uint64_t> ub(r, p);
     std::vector<l0_insertion_sampler<std::uint64_t>> bl0s;
     bl0s.reserve(t);
@@ -97,14 +93,13 @@ int main(int argc, char *argv[])
     {
         std::uint64_t v = ub(g);
         ++vs[v];
-        #pragma omp parallel for
         for (std::uint64_t j = 0; j < t; ++j)
             bl0s[j] += v;
     }
     for (std::uint64_t i = 0; i < t; ++i)
         ++vl[bl0s[i]];
     for (std::uint64_t i = 0; i <= r; ++i)
-        std::cout << "    " << vs[i] << " " << vl[i] << std::endl;
+        std::cout << i << " " << vs[i] << " " << vl[i] << std::endl;
 
     return 0;
 }
