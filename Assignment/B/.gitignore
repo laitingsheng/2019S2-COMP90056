@@ -1,6 +1,8 @@
-/main
 /part1.*
 !/part1.tex
 /report.*
 !/report.tex
 /cms.zip
+
+/test
+/bin
