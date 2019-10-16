@@ -1,6 +1,9 @@
-define compile_test
-	mkdir -p test
-	g++ -std=c++17 -O3 -Wall -Wextra -Wpedantic -Wno-reorder -Werror $(3) -o $(1) $(2)
+BIN_DIR = bin
+TEST_DIR = test
+
+define compile_exe
+	mkdir -p $(1)
+	g++ -std=c++17 -O3 -Wall -Wextra -Wpedantic -Wno-reorder -Werror -o $(2) $(3) $(4)
 endef
 
 define execute_test
@@ -11,11 +14,16 @@ define execute_tests
 	$(foreach exe,$(1),$(call execute_test,$(exe)))
 endef
 
-tests: test/k_hash_test
+all: $(BIN_DIR)/a
+
+$(BIN_DIR)/a: a_main.cpp l.hpp k_hash.hpp
+	$(call compile_exe,$(BIN_DIR),$@,$^,-lboost_program_options)
+
+tests: $(TEST_DIR)/k_hash_test
 	$(call execute_tests,$^)
 
-test/k_hash_test: k_hash_test.cpp k_hash.hpp
-	$(call compile_test,$@,$^)
+$(TEST_DIR)/k_hash_test: k_hash_test.cpp k_hash.hpp
+	$(call compile_exe,$(TEST_DIR),$@,$^)
 
 part1: part1.tex
 	pdflatex -jobname=$@ $^
