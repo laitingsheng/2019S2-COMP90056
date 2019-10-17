@@ -16,13 +16,13 @@ endef
 
 all: $(BIN_DIR)/a
 
-$(BIN_DIR)/a: a_main.cpp l.hpp k_hash.hpp
+$(BIN_DIR)/a: a_main.cpp sampler.hpp hash.hpp prime.h
 	$(call compile_exe,$(BIN_DIR),$@,$^,-lboost_program_options)
 
-tests: $(TEST_DIR)/k_hash_test
+tests: $(TEST_DIR)/hash_test
 	$(call execute_tests,$^)
 
-$(TEST_DIR)/k_hash_test: k_hash_test.cpp k_hash.hpp
+$(TEST_DIR)/hash_test: hash_test.cpp hash.hpp prime.h
 	$(call compile_exe,$(TEST_DIR),$@,$^)
 
 part1: part1.tex
