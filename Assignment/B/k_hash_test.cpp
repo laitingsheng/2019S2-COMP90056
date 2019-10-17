@@ -12,7 +12,7 @@ struct k_hash_tester final
 {
     void test_hash()
     {
-        k_hash<std::uint8_t> h { 32, std::uniform_int_distribution<std::uint32_t>(1, 50), std::uniform_int_distribution<std::uint32_t>(0, 50) };
+        k_hash<std::uint8_t> h(32, 50);
 
         // integer hash is trivial and perfect
         constexpr uint8_t item = 3;
