@@ -7,7 +7,7 @@
 #include <boost/test/included/unit_test.hpp>
 
 #include "hash.hpp"
-#include "prime.h"
+#include "prime.hpp"
 
 namespace hash
 {

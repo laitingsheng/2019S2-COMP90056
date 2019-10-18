@@ -64,14 +64,16 @@ int main(int argc, char *argv[])
     if (options.count("trial"))
         t = options["trial"].as<uint64_t>();
 
+    using ItemType = uint64_t;
+
     // used to record distribution
-    std::vector<uint64_t> vs(r + 1), vl(r + 1);
+    std::vector<ItemType> vs(r + 1), vl(r + 1);
     std::mt19937_64 g { std::random_device()() };
     uint8_t const k = log(floor(1 / e));
-    hash::k_universal_family<uint64_t> kuf(k);
+    hash::k_universal_family<ItemType> kuf(k);
 
-    std::uniform_int_distribution<uint64_t> ud(0, r);
-    std::vector<sampler::l0_insertion<uint64_t>> ul0s;
+    std::uniform_int_distribution<ItemType> ud(0, r);
+    std::vector<sampler::l0_insertion<ItemType>> ul0s;
     ul0s.reserve(t);
     for (uint64_t i = 0; i < t; ++i)
         ul0s.emplace_back(r, kuf());
@@ -90,8 +92,8 @@ int main(int argc, char *argv[])
     vs.clear();
     vl.clear();
 
-    std::binomial_distribution<uint64_t> ub(r, p);
-    std::vector<sampler::l0_insertion<uint64_t>> bl0s;
+    std::binomial_distribution<ItemType> ub(r, p);
+    std::vector<sampler::l0_insertion<ItemType>> bl0s;
     bl0s.reserve(t);
     for (uint64_t i = 0; i < t; ++i)
         bl0s.emplace_back(r, kuf());

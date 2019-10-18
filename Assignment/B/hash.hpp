@@ -6,7 +6,7 @@
 #include <functional>
 #include <random>
 
-#include "prime.h"
+#include "prime.hpp"
 
 namespace hash
 {
@@ -35,13 +35,13 @@ private:
     static constexpr std::hash<T> basic {};
     static constexpr prime::mersenne const & mp31 = prime::mersennes::mersenne31;
 
-    constexpr k_universal(uint64_t a, std::vector<uint64_t> && as) noexcept : as(as), a(a) {}
+    k_universal(uint64_t a, std::vector<uint64_t> && as) noexcept : as(as), a(a) {}
 
     k_universal & operator=(k_universal const &) = delete;
     k_universal & operator=(k_universal &&) = delete;
 
-    std::uint64_t const a;
-    std::vector<uint64_t> const as;
+    std::uint64_t a;
+    std::vector<uint64_t> as;
 };
 
 template<typename T>
@@ -78,7 +78,7 @@ private:
     k_universal_family & operator=(k_universal_family const &) = delete;
     k_universal_family & operator=(k_universal_family &&) = delete;
 
-    uint8_t const k;
+    uint8_t k;
     std::uniform_int_distribution<uint64_t> ad;
     std::vector<std::uniform_int_distribution<uint64_t>> asd;
     std::mt19937_64 ag;

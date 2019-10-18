@@ -2,6 +2,7 @@
 #define __PRIME_H_
 
 #include <cstdint>
+#include <type_traits>
 
 namespace prime
 {
@@ -10,10 +11,18 @@ struct mersenne
 {
     uint64_t const s, p;
 
-    inline constexpr uint64_t operator()(uint64_t k) const
+    template<typename T, std::enable_if_t<std::is_unsigned_v<T>, bool> = true>
+    inline constexpr uint64_t operator()(T k) const
     {
-        uint64_t i = (k & p) + (k >> s);
+        uint64_t i = k & p;
+        i += k >> s;
         return i < p ? i : i - p;
+    }
+
+    template<typename T, std::enable_if_t<std::is_signed_v<T>, bool> = true>
+    inline constexpr uint64_t operator()(T k) const
+    {
+        return k >= 0 ? operator()(uint64_t(k)) : p - operator()(uint64_t(-k));
     }
 private:
     friend struct mersennes;
