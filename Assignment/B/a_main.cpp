@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    double p = 0.5;
+    double p = 0.8;
     if (options.count("probability"))
     {
         p = options["probability"].as<double>();

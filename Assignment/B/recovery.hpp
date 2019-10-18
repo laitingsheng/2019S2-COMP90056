@@ -36,6 +36,7 @@ struct sparse1 final
             return { 2, 0 };
         int64_t j = w2 / w1;
         if (j < 0)
+            return { 2, 0 }
     }
 private:
     static constexpr prime::mersenne const & mp31 = prime::mersennes::mersenne31;
