@@ -7,15 +7,14 @@ import matplotlib.pyplot as plt
 
 
 def split(line):
-    v, record, universal, uniform = line.split()
-    return int(v), int(record), int(universal), int(uniform)
+    v, record, universal = line.split()
+    return int(v), int(record), int(universal)
 
 
-def plot(x, ry, uy, sy, loc, index, name):
-    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True)
+def plot(x, ry, uy, loc, index, name):
+    fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
     ax1.bar(x, ry)
     ax2.bar(x, uy)
-    ax3.bar(x, sy)
     fig.savefig(f"{loc}/{index}-{name}.jpg")
 
 
@@ -27,7 +26,6 @@ def main(argv):
         plot(uniform[:, 0].flatten(),
              uniform[:, 1].flatten(),
              uniform[:, 2].flatten(),
-             uniform[:, 3].flatten(),
              argv[2],
              argv[3],
              "Uniform")
@@ -36,7 +34,6 @@ def main(argv):
         plot(binomial[:, 0].flatten(),
              binomial[:, 1].flatten(),
              binomial[:, 2].flatten(),
-             binomial[:, 3].flatten(),
              argv[2],
              argv[3],
              "Binomial")

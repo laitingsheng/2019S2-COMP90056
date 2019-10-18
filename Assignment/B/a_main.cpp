@@ -67,65 +67,47 @@ int main(int argc, char *argv[])
     using ItemType = uint64_t;
 
     // used to record distribution
-    std::vector<ItemType> vs(r + 1), vlk(r + 1), vls(r + 1);
+    std::vector<ItemType> vs(r + 1), vlk(r + 1);
     std::mt19937_64 g { std::random_device()() };
     uint8_t const k = log2(floor(1 / e));
     hash::k_universal_family<ItemType> kuf(k);
-    hash::simple_uniform_family<ItemType> suf;
 
     std::uniform_int_distribution<ItemType> ud(0, r);
     std::vector<sampler::l0_insertion<hash::k_universal<ItemType>>> ul0ks;
-    std::vector<sampler::l0_insertion<hash::simple_uniform<ItemType>>> ul0ss;
     ul0ks.reserve(t);
     for (uint64_t i = 0; i < t; ++i)
         ul0ks.emplace_back(r, kuf());
-    ul0ss.reserve(t);
-    for (uint64_t i = 0; i < t; ++i)
-        ul0ss.emplace_back(r, suf());
     for (uint64_t i = 0; i < s; ++i)
     {
         uint64_t v = ud(g);
         ++vs[v];
         for (auto & ul0k : ul0ks)
             ul0k += v;
-        for (auto & ul0s : ul0ss)
-            ul0s += v;
     }
     for (auto const & ul0k : ul0ks)
         ++vlk[ul0k];
-    for (auto const & ul0s : ul0ss)
-        ++vls[ul0s];
     for (uint64_t i = 0; i <= r; ++i)
-        std::cout << i << " " << vs[i] << " " << vlk[i] << " " << vls[i] << std::endl;
+        std::cout << i << " " << vs[i] << " " << vlk[i] << std::endl;
 
     vs.clear();
     vlk.clear();
-    vls.clear();
 
     std::binomial_distribution<ItemType> ub(r, p);
     std::vector<sampler::l0_insertion<hash::k_universal<ItemType>>> bl0ks;
-    std::vector<sampler::l0_insertion<hash::simple_uniform<ItemType>>> bl0ss;
     bl0ks.reserve(t);
     for (uint64_t i = 0; i < t; ++i)
         bl0ks.emplace_back(r, kuf());
-    bl0ss.reserve(t);
-    for (uint64_t i = 0; i < t; ++i)
-        bl0ss.emplace_back(r, suf());
     for (uint64_t i = 0; i < s; ++i)
     {
         uint64_t v = ub(g);
         ++vs[v];
         for (auto & bl0k : bl0ks)
             bl0k += v;
-        for (auto & bl0s : bl0ss)
-            bl0s += v;
     }
     for (auto const & bl0k : bl0ks)
         ++vlk[bl0k];
-    for (auto const & bl0s : bl0ss)
-        ++vls[bl0s];
     for (uint64_t i = 0; i <= r; ++i)
-        std::cout << i << " " << vs[i] << " " << vlk[i] << " " << vls[i] << std::endl;
+        std::cout << i << " " << vs[i] << " " << vlk[i] << std::endl;
 
     return 0;
 }

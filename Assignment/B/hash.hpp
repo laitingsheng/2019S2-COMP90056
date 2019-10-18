@@ -92,54 +92,6 @@ private:
 template<typename T>
 std::random_device k_universal_family<T>::rd {};
 
-template<typename T, std::enable_if_t<std::is_arithmetic_v<T>, bool> = true>
-struct simple_uniform
-{
-    using ItemType = T;
-
-    simple_uniform(simple_uniform const &) = default;
-    simple_uniform(simple_uniform &&) = default;
-
-    inline constexpr uint64_t operator()(T item) const noexcept
-    {
-        return mp31(mp31(basic(item)) + v);
-    }
-private:
-    template<typename>
-    friend struct simple_uniform_family;
-
-    static constexpr std::hash<T> basic {};
-    static constexpr prime::mersenne const & mp31 = prime::mersennes::mersenne31;
-
-    uint64_t v;
-
-    simple_uniform(uint64_t v) : v(v) {}
-
-    simple_uniform & operator=(simple_uniform const &) = delete;
-    simple_uniform & operator=(simple_uniform &&) = delete;
-};
-
-template<typename T>
-struct simple_uniform_family
-{
-    using ItemType = T;
-
-    simple_uniform_family() : ag(rd()), ad(0, prime::mersennes::mersenne31.p - 1) {}
-
-    simple_uniform<T> operator()()
-    {
-        return simple_uniform<T>(ad(ag));
-    }
-private:
-    static std::random_device rd;
-
-    std::uniform_int_distribution<uint64_t> ad;
-    std::mt19937_64 ag;
-};
-
-template<typename T>
-std::random_device simple_uniform_family<T>::rd {};
-
 }
 
 #endif
