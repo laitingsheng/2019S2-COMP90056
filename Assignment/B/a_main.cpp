@@ -73,47 +73,38 @@ int main(int argc, char *argv[])
     hash::k_universal_family<ItemType> kuf(k);
 
     std::uniform_int_distribution<ItemType> ud(0, r - 1);
-    std::vector<sampler::l0_insertion<ItemType>> ul0ks;
-    ul0ks.reserve(t);
+    std::vector<sampler::l0_insertion<ItemType>> l0ks;
+    l0ks.reserve(t);
     for (uint64_t i = 0; i < t; ++i)
-        ul0ks.emplace_back(r, kuf());
+        l0ks.emplace_back(r, kuf());
     for (uint64_t i = 0; i < s; ++i)
     {
         uint64_t v = ud(g);
         ++vs[v];
-        for (auto & ul0k : ul0ks)
-            ul0k += v;
+        for (auto & l0k : l0ks)
+            l0k += v;
     }
-    for (auto const & ul0k : ul0ks)
-    {
-        uint64_t s = ul0k;
-        std::cerr << "    " << s << std::endl;
-        ++vlk[s];
-    }
+    for (auto const & l0k : l0ks)
+        ++vlk[l0k];
     for (uint64_t i = 0; i < r; ++i)
         std::cout << i << " " << vs[i] << " " << vlk[i] << std::endl;
 
-    vs.clear();
-    vlk.clear();
+    vs = std::vector<ItemType>(r);
+    vlk = std::vector<ItemType>(r);
 
     std::binomial_distribution<ItemType> ub(r - 1, p);
-    std::vector<sampler::l0_insertion<ItemType>> bl0ks;
-    bl0ks.reserve(t);
+    l0ks.clear();
     for (uint64_t i = 0; i < t; ++i)
-        bl0ks.emplace_back(r, kuf());
+        l0ks.emplace_back(r, kuf());
     for (uint64_t i = 0; i < s; ++i)
     {
         uint64_t v = ub(g);
         ++vs[v];
-        for (auto & bl0k : bl0ks)
-            bl0k += v;
+        for (auto & l0k : l0ks)
+            l0k += v;
     }
-    for (auto const & bl0k : bl0ks)
-    {
-        uint64_t s = bl0k;
-        std::cerr << "    " << s << std::endl;
-        ++vlk[s];
-    }
+    for (auto const & l0k : l0ks)
+        ++vlk[l0k];
     for (uint64_t i = 0; i < r; ++i)
         std::cout << i << " " << vs[i] << " " << vlk[i] << std::endl;
 

@@ -29,7 +29,7 @@ struct l0_insertion final
         return *this;
     }
 
-    operator T() const
+    operator T() const noexcept
     {
         return *aref;
     }
