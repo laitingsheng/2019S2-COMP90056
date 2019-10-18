@@ -67,13 +67,13 @@ int main(int argc, char *argv[])
     using ItemType = uint64_t;
 
     // used to record distribution
-    std::vector<ItemType> vs(r + 1), vlk(r + 1);
+    std::vector<ItemType> vs(r), vlk(r);
     std::mt19937_64 g { std::random_device()() };
     uint8_t const k = log2(floor(1 / e));
     hash::k_universal_family<ItemType> kuf(k);
 
-    std::uniform_int_distribution<ItemType> ud(0, r);
-    std::vector<sampler::l0_insertion<hash::k_universal<ItemType>>> ul0ks;
+    std::uniform_int_distribution<ItemType> ud(0, r - 1);
+    std::vector<sampler::l0_insertion<ItemType>> ul0ks;
     ul0ks.reserve(t);
     for (uint64_t i = 0; i < t; ++i)
         ul0ks.emplace_back(r, kuf());
@@ -85,15 +85,19 @@ int main(int argc, char *argv[])
             ul0k += v;
     }
     for (auto const & ul0k : ul0ks)
-        ++vlk[ul0k];
-    for (uint64_t i = 0; i <= r; ++i)
+    {
+        uint64_t s = ul0k;
+        std::cerr << "    " << s << std::endl;
+        ++vlk[s];
+    }
+    for (uint64_t i = 0; i < r; ++i)
         std::cout << i << " " << vs[i] << " " << vlk[i] << std::endl;
 
     vs.clear();
     vlk.clear();
 
-    std::binomial_distribution<ItemType> ub(r, p);
-    std::vector<sampler::l0_insertion<hash::k_universal<ItemType>>> bl0ks;
+    std::binomial_distribution<ItemType> ub(r - 1, p);
+    std::vector<sampler::l0_insertion<ItemType>> bl0ks;
     bl0ks.reserve(t);
     for (uint64_t i = 0; i < t; ++i)
         bl0ks.emplace_back(r, kuf());
@@ -105,8 +109,12 @@ int main(int argc, char *argv[])
             bl0k += v;
     }
     for (auto const & bl0k : bl0ks)
-        ++vlk[bl0k];
-    for (uint64_t i = 0; i <= r; ++i)
+    {
+        uint64_t s = bl0k;
+        std::cerr << "    " << s << std::endl;
+        ++vlk[s];
+    }
+    for (uint64_t i = 0; i < r; ++i)
         std::cout << i << " " << vs[i] << " " << vlk[i] << std::endl;
 
     return 0;

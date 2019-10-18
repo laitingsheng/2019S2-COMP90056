@@ -35,7 +35,7 @@ struct sparse1 final
         if (w2 % w1)
             return { 2, 0 };
         int64_t j = w2 / w1;
-        if (j < 0)
+        if (j <= 0)
             return { 2, 0 }
     }
 private:

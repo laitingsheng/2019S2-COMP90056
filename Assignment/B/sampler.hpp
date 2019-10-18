@@ -9,12 +9,10 @@
 namespace sampler
 {
 
-template<typename H>
+template<typename T>
 struct l0_insertion final
 {
-    using T = typename H::ItemType;
-
-    l0_insertion(uint64_t n, H h) : h(h), aref(nullptr), m(n + 1), n(n) {}
+    l0_insertion(uint64_t n, hash::k_universal<T> && h) : h(h), aref(nullptr), m(n + 1), n(n) {}
 
     l0_insertion(l0_insertion const &) = default;
     l0_insertion(l0_insertion &&) = default;
@@ -36,10 +34,10 @@ struct l0_insertion final
         return *aref;
     }
 private:
-    uint64_t const n;
+    uint64_t n;
     uint64_t m;
     T a, *aref;
-    H h;
+    hash::k_universal<T> h;
 
     l0_insertion & operator=(l0_insertion const &) = delete;
     l0_insertion & operator=(l0_insertion &&) = delete;
