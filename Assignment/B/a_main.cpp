@@ -14,11 +14,11 @@ int main(int argc, char *argv[])
     boost::program_options::options_description cli("Options");
     cli.add_options()
     ("help,h", "help")
-    ("epsilon,e", boost::program_options::value<double>(), "epsilon value used in l0 sampling, must be in [0, 1], defaults to 1e-32")
+    ("epsilon,e", boost::program_options::value<double>(), "epsilon value used in l0 sampling, must be in [0, 1], defaults to 1e-8")
     ("probability,p", boost::program_options::value<double>(), "success probability for binomial distribution, must be in [0, 1], defaults to 0.5")
-    ("range,r", boost::program_options::value<uint64_t>(), "data range, must be positive, defaults to the stream size / 10")
+    ("range,r", boost::program_options::value<uint64_t>(), "data range, must be positive, defaults to the stream size / 100")
     ("size,s", boost::program_options::value<uint64_t>(), "stream size, must be positive, defaults to 10000")
-    ("trial,t", boost::program_options::value<uint64_t>(), "number of trials, must be positive, defaults to 2 * range");
+    ("trial,t", boost::program_options::value<uint64_t>(), "number of trials, must be positive, defaults to 10 * range");
 
     boost::program_options::variables_map options;
     boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cli), options);
@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    double e = 1e-32;
+    double e = 1e-8;
     if (options.count("epsilon"))
     {
         e = options["epsilon"].as<double>();
@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    double p = 0.8;
+    double p = 0.5;
     if (options.count("probability"))
     {
         p = options["probability"].as<double>();
@@ -56,11 +56,11 @@ int main(int argc, char *argv[])
     if (options.count("size"))
         s = options["size"].as<uint64_t>();
 
-    uint64_t r = s / 10;
+    uint64_t r = s / 100;
     if (options.count("range"))
         r = options["range"].as<uint64_t>();
 
-    uint64_t t = 2 * r;
+    uint64_t t = 10 * r;
     if (options.count("trial"))
         t = options["trial"].as<uint64_t>();
 

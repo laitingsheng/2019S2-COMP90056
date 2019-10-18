@@ -33,7 +33,7 @@ struct k_universal_tester final
                 exp += i * acc;
                 acc *= item;
             }
-            exp = prime::mersennes::mersenne31(exp + h.a * acc);
+            exp =(exp + h.a * acc) %  prime::mersennes::mersenne31.p;
             BOOST_CHECK_EQUAL(re, exp);
         }
     }
