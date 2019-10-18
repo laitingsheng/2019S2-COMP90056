@@ -20,23 +20,35 @@ struct sparse1 final
         w2 += int64_t(index) * update;
         int64_t acc = 1;
         for (uint16_t i = 0; i < index; ++i)
-            acc = acc * q % p;
-        w3 += acc * update % p;
+            acc = mp31(acc * q);
+        w3 += mp31(acc * update);
     }
 
     std::pair<uint16_t, int8_t> operator()()
     {
         if (!w1)
-            return {0, 0};
-        int64_t re = 1;
+        {
+            if (w2 || w3)
+                return { 2, 0 };
+            return { 0, 0 };
+        }
+        if (w2 % w1)
+            return { 2, 0 };
+        int64_t j = w2 / w1;
+        if (j < 0)
     }
 private:
-    static std::mt19937 g { std::random_device()() };
-    static std::uniform_int_distribution<uint32_t> d(1, prime::mersennes::mersenne31.p);
+    static constexpr prime::mersenne const & mp31 = prime::mersennes::mersenne31;
+
+    static std::uniform_int_distribution<uint32_t> d;
+    static std::mt19937 g;
 
     int64_t w1, w2, w3;
     uint32_t const q;
 };
+
+std::uniform_int_distribution<uint32_t> sparse1::d { 1, mp31.p };
+std::mt19937 sparse1::g { std::random_device()() };
 
 }
 

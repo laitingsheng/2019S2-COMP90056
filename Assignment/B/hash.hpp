@@ -14,6 +14,8 @@ namespace hash
 template<typename T>
 struct k_universal final
 {
+    using ItemType = T;
+
     k_universal(k_universal const &) = default;
     k_universal(k_universal &&) = default;
 
@@ -35,18 +37,20 @@ private:
     static constexpr std::hash<T> basic {};
     static constexpr prime::mersenne const & mp31 = prime::mersennes::mersenne31;
 
+    std::uint64_t a;
+    std::vector<uint64_t> as;
+
     k_universal(uint64_t a, std::vector<uint64_t> && as) noexcept : as(as), a(a) {}
 
     k_universal & operator=(k_universal const &) = delete;
     k_universal & operator=(k_universal &&) = delete;
-
-    std::uint64_t a;
-    std::vector<uint64_t> as;
 };
 
 template<typename T>
 struct k_universal_family final
 {
+    using ItemType = T;
+
     k_universal_family(uint8_t k) : k_universal_family(k, prime::mersennes::mersenne31.p - 1) {}
 
     k_universal<T> operator()()
@@ -60,6 +64,12 @@ private:
     friend struct k_universal_tester;
 
     static std::random_device rd;
+
+    uint8_t k;
+    std::uniform_int_distribution<uint64_t> ad;
+    std::vector<std::uniform_int_distribution<uint64_t>> asd;
+    std::mt19937_64 ag;
+    std::vector<std::mt19937_64> asg;
 
     k_universal_family(uint8_t k, uint32_t max) : ag(rd()), ad(1, max), k(k)
     {
@@ -77,16 +87,58 @@ private:
 
     k_universal_family & operator=(k_universal_family const &) = delete;
     k_universal_family & operator=(k_universal_family &&) = delete;
-
-    uint8_t k;
-    std::uniform_int_distribution<uint64_t> ad;
-    std::vector<std::uniform_int_distribution<uint64_t>> asd;
-    std::mt19937_64 ag;
-    std::vector<std::mt19937_64> asg;
 };
 
 template<typename T>
 std::random_device k_universal_family<T>::rd {};
+
+template<typename T, std::enable_if_t<std::is_arithmetic_v<T>, bool> = true>
+struct simple_uniform
+{
+    using ItemType = T;
+
+    simple_uniform(simple_uniform const &) = default;
+    simple_uniform(simple_uniform &&) = default;
+
+    inline constexpr uint64_t operator()(T item) const noexcept
+    {
+        return mp31(mp31(basic(item)) + v);
+    }
+private:
+    template<typename>
+    friend struct simple_uniform_family;
+
+    static constexpr std::hash<T> basic {};
+    static constexpr prime::mersenne const & mp31 = prime::mersennes::mersenne31;
+
+    uint64_t v;
+
+    simple_uniform(uint64_t v) : v(v) {}
+
+    simple_uniform & operator=(simple_uniform const &) = delete;
+    simple_uniform & operator=(simple_uniform &&) = delete;
+};
+
+template<typename T>
+struct simple_uniform_family
+{
+    using ItemType = T;
+
+    simple_uniform_family() : ag(rd()), ad(0, prime::mersennes::mersenne31.p - 1) {}
+
+    simple_uniform<T> operator()()
+    {
+        return simple_uniform<T>(ad(ag));
+    }
+private:
+    static std::random_device rd;
+
+    std::uniform_int_distribution<uint64_t> ad;
+    std::mt19937_64 ag;
+};
+
+template<typename T>
+std::random_device simple_uniform_family<T>::rd {};
 
 }
 

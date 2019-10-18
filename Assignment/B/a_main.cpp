@@ -16,9 +16,9 @@ int main(int argc, char *argv[])
     ("help,h", "help")
     ("epsilon,e", boost::program_options::value<double>(), "epsilon value used in l0 sampling, must be in [0, 1], defaults to 1e-32")
     ("probability,p", boost::program_options::value<double>(), "success probability for binomial distribution, must be in [0, 1], defaults to 0.5")
-    ("range,r", boost::program_options::value<uint64_t>(), "data range, must be positive, defaults to the stream size")
+    ("range,r", boost::program_options::value<uint64_t>(), "data range, must be positive, defaults to the stream size / 10")
     ("size,s", boost::program_options::value<uint64_t>(), "stream size, must be positive, defaults to 10000")
-    ("trial,t", boost::program_options::value<uint64_t>(), "number of trials, must be positive, defaults to range / 10");
+    ("trial,t", boost::program_options::value<uint64_t>(), "number of trials, must be positive, defaults to 2 * range");
 
     boost::program_options::variables_map options;
     boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cli), options);
@@ -56,58 +56,76 @@ int main(int argc, char *argv[])
     if (options.count("size"))
         s = options["size"].as<uint64_t>();
 
-    uint64_t r = s;
+    uint64_t r = s / 10;
     if (options.count("range"))
         r = options["range"].as<uint64_t>();
 
-    uint64_t t = r / 10;
+    uint64_t t = 2 * r;
     if (options.count("trial"))
         t = options["trial"].as<uint64_t>();
 
     using ItemType = uint64_t;
 
     // used to record distribution
-    std::vector<ItemType> vs(r + 1), vl(r + 1);
+    std::vector<ItemType> vs(r + 1), vlk(r + 1), vls(r + 1);
     std::mt19937_64 g { std::random_device()() };
-    uint8_t const k = log(floor(1 / e));
+    uint8_t const k = log2(floor(1 / e));
     hash::k_universal_family<ItemType> kuf(k);
+    hash::simple_uniform_family<ItemType> suf;
 
     std::uniform_int_distribution<ItemType> ud(0, r);
-    std::vector<sampler::l0_insertion<ItemType>> ul0s;
-    ul0s.reserve(t);
+    std::vector<sampler::l0_insertion<hash::k_universal<ItemType>>> ul0ks;
+    std::vector<sampler::l0_insertion<hash::simple_uniform<ItemType>>> ul0ss;
+    ul0ks.reserve(t);
     for (uint64_t i = 0; i < t; ++i)
-        ul0s.emplace_back(r, kuf());
+        ul0ks.emplace_back(r, kuf());
+    ul0ss.reserve(t);
+    for (uint64_t i = 0; i < t; ++i)
+        ul0ss.emplace_back(r, suf());
     for (uint64_t i = 0; i < s; ++i)
     {
         uint64_t v = ud(g);
         ++vs[v];
-        for (uint64_t j = 0; j < t; ++j)
-            ul0s[j] += v;
+        for (auto & ul0k : ul0ks)
+            ul0k += v;
+        for (auto & ul0s : ul0ss)
+            ul0s += v;
     }
-    for (auto const & ul0 : ul0s)
-        ++vl[ul0];
+    for (auto const & ul0k : ul0ks)
+        ++vlk[ul0k];
+    for (auto const & ul0s : ul0ss)
+        ++vls[ul0s];
     for (uint64_t i = 0; i <= r; ++i)
-        std::cout << i << " " << vs[i] << " " << vl[i] << std::endl;
+        std::cout << i << " " << vs[i] << " " << vlk[i] << " " << vls[i] << std::endl;
 
     vs.clear();
-    vl.clear();
+    vlk.clear();
+    vls.clear();
 
     std::binomial_distribution<ItemType> ub(r, p);
-    std::vector<sampler::l0_insertion<ItemType>> bl0s;
-    bl0s.reserve(t);
+    std::vector<sampler::l0_insertion<hash::k_universal<ItemType>>> bl0ks;
+    std::vector<sampler::l0_insertion<hash::simple_uniform<ItemType>>> bl0ss;
+    bl0ks.reserve(t);
     for (uint64_t i = 0; i < t; ++i)
-        bl0s.emplace_back(r, kuf());
+        bl0ks.emplace_back(r, kuf());
+    bl0ss.reserve(t);
+    for (uint64_t i = 0; i < t; ++i)
+        bl0ss.emplace_back(r, suf());
     for (uint64_t i = 0; i < s; ++i)
     {
         uint64_t v = ub(g);
         ++vs[v];
-        for (uint64_t j = 0; j < t; ++j)
-            bl0s[j] += v;
+        for (auto & bl0k : bl0ks)
+            bl0k += v;
+        for (auto & bl0s : bl0ss)
+            bl0s += v;
     }
-    for (auto const & bl0 : bl0s)
-        ++vl[bl0];
+    for (auto const & bl0k : bl0ks)
+        ++vlk[bl0k];
+    for (auto const & bl0s : bl0ss)
+        ++vls[bl0s];
     for (uint64_t i = 0; i <= r; ++i)
-        std::cout << i << " " << vs[i] << " " << vl[i] << std::endl;
+        std::cout << i << " " << vs[i] << " " << vlk[i] << " " << vls[i] << std::endl;
 
     return 0;
 }
