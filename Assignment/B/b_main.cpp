@@ -40,6 +40,7 @@ int main(int argc, char *argv[])
 
         std::vector<recovery::sparse_1> sparses(t);
 
+        std::unordered_map<uint16_t, uint64_t> record;
         stream::turnstile_stream<uint16_t, int8_t> ts(s, ns);
         while (true)
         {
@@ -49,7 +50,27 @@ int main(int argc, char *argv[])
             auto const & [item, update] = r.second;
             for (auto & sparse : sparses)
                 sparse(item, update);
+            record[item] += update;
+            if (!record[item])
+                record.erase(item);
         }
+        while (record.size() < sparsity)
+        {
+            stream::turnstile_stream<uint16_t, int8_t> ts(s, ns);
+            while (record.size() < sparsity)
+            {
+                std::pair<bool, std::pair<uint16_t, int8_t>> r = ts;
+                if (!r.first)
+                    break;
+                auto const & [item, update] = r.second;
+                for (auto & sparse : sparses)
+                    sparse(item, update);
+                record[item] += update;
+                if (!record[item])
+                    record.erase(item);
+            }
+        }
+
         uint16_t correct = 0;
         for (auto const & sparse: sparses)
         {

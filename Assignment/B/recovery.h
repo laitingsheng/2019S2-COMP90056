@@ -61,7 +61,7 @@ private:
     sparse_1 & operator=(sparse_1 const &) = delete;
     sparse_1 & operator=(sparse_1 &&) = delete;
 
-    uint64_t w1, w2, w3;
+    int64_t w1, w2, w3;
     uint32_t q;
 };
 

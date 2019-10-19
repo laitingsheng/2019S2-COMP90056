@@ -59,6 +59,12 @@ private:
     std::uniform_int_distribution<int8_t> ud;
 
     std::vector<std::pair<uint16_t, int8_t>> generated;
+
+    turnstile_stream(turnstile_stream const &) = delete;
+    turnstile_stream(turnstile_stream &&) = delete;
+
+    turnstile_stream operator=(turnstile_stream const &) = delete;
+    turnstile_stream operator=(turnstile_stream &&) = delete;
 };
 
 std::random_device turnstile_stream<uint16_t, int8_t>::rd {};
