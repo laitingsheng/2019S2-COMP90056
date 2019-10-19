@@ -34,11 +34,18 @@ struct sparse_1 final
 
     operator std::pair<uint16_t, uint64_t>() const
     {
-        // all f >= 0
         if (!w1)
+        {
+            if (w2 || w3)
+                return { 2, 0 };
+            // for large q, it is unlikely to have w2 = w3 = 0 if there are two or more numbers with non-zero frequency
             return { 0, 0 };
-        // there must be more than one existing items with non-zero frequency
-        if (w2 % w1)
+        }
+        // j is always positive, and single item with non-zero frequency will always be divisible
+        if (!w2 || w2 % w1)
+            return { 2, 0 };
+        // j should always be positive
+        if ((w1 > 0) != (w2 > 0))
             return { 2, 0 };
         uint64_t j = w2 / w1;
         // j is limited in range [0, 2^16-1], this means more than items have non-zero frequency

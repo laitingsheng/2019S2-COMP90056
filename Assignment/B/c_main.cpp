@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
     if (options.count("trial"))
         t = options["trial"].as<uint16_t>();
 
-    for (uint8_t sparsity = 0; sparsity < 2 * k; ++sparsity)
+    for (uint8_t sparsity = 0; sparsity <= 2 * k; ++sparsity)
     {
         uint16_t ns = s - sparsity;
 
@@ -97,16 +97,7 @@ int main(int argc, char *argv[])
             if (sparsity == 0 || sparsity > k)
                 correct += output.size() == 0;
             else
-            {
-                bool match = true;
-                for (auto const & [k, v] : record)
-                    if (v && output[k] != v)
-                    {
-                        match = false;
-                        break;
-                    }
-                correct += match;
-            }
+                correct += output == record;
         }
         std::cout << "Correct rate (" << s << " : " << ns << "): " << correct << "/" << t << std::endl;
     }
