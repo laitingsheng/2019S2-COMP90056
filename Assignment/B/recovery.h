@@ -25,14 +25,14 @@ struct sparse_1 final
     {
         w1 += update;
         w2 += int64_t(index) * update;
-        int64_t acc = 1;
+        uint64_t acc = 1;
         for (uint16_t i = 0; i < index; ++i)
             acc = mp(acc * q);
-        w3 = mp(w3 + mp(acc * update));
+        w3 = mp(w3 + mp(acc * mp(update)));
         return *this;
     }
 
-    operator std::pair<uint16_t, uint64_t>() const
+    operator std::pair<uint16_t, int64_t>() const
     {
         if (!w1)
         {
@@ -41,11 +41,8 @@ struct sparse_1 final
             // for large q, it is unlikely to have w2 = w3 = 0 if there are two or more numbers with non-zero frequency
             return { 0, 0 };
         }
-        // j is always positive, and single item with non-zero frequency will always be divisible
-        if (!w2 || w2 % w1)
-            return { 2, 0 };
-        // j should always be positive
-        if ((w1 > 0) != (w2 > 0))
+        // j is always a positive integer, and single item with non-zero frequency will always be divisible
+        if (!w2 || (w1 > 0) != (w2 > 0) || w2 % w1)
             return { 2, 0 };
         uint64_t j = w2 / w1;
         // j is limited in range [0, 2^16-1], this means more than items have non-zero frequency
@@ -68,12 +65,13 @@ private:
     sparse_1 & operator=(sparse_1 const &) = delete;
     sparse_1 & operator=(sparse_1 &&) = delete;
 
-    int64_t w1, w2, w3;
+    int64_t w1, w2;
+    uint64_t w3;
     uint32_t q;
 };
 
 // it will be nonsense to have q = 0
-std::uniform_int_distribution<uint32_t> sparse_1::d { 1, mp.p };
+std::uniform_int_distribution<uint32_t> sparse_1::d { 1, mp.p - 1 };
 std::mt19937 sparse_1::g { std::random_device()() };
 
 struct sparse_k final
@@ -100,13 +98,13 @@ struct sparse_k final
         return *this;
     }
 
-    operator std::unordered_map<uint16_t, uint64_t>() const
+    operator std::unordered_map<uint16_t, int64_t>() const
     {
-        std::unordered_map<uint16_t, uint64_t> re(k);
+        std::unordered_map<uint16_t, int64_t> re(k);
         for (auto const & ss : records)
             for (auto const & s : ss)
             {
-                std::pair<uint16_t, uint64_t> r = s;
+                std::pair<uint16_t, int64_t> r = s;
                 if (r.second && (!re.count(r.first) || r.second < re[r.first]))
                     re[r.first] = r.second;
                 if (re.size() > k)

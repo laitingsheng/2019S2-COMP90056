@@ -34,6 +34,7 @@ int main(int argc, char *argv[])
     if (options.count("trial"))
         t = options["trial"].as<uint16_t>();
 
+    std::cout << "Turnstile Stream" << std::endl;
     for (uint8_t sparsity = 0; sparsity < 5; ++sparsity)
     {
         uint16_t ns = s - sparsity;
@@ -41,7 +42,7 @@ int main(int argc, char *argv[])
         std::vector<recovery::sparse_1> sparses(t);
 
         std::unordered_map<uint16_t, uint64_t> record;
-        stream::turnstile_stream<uint16_t, int8_t> ts(s, ns);
+        stream::int_sparse_stream<stream::stream_type::turnstile> ts(s, ns);
         while (true)
         {
             std::pair<bool, std::pair<uint16_t, int8_t>> r = ts;
@@ -56,7 +57,7 @@ int main(int argc, char *argv[])
         }
         while (record.size() < sparsity)
         {
-            stream::turnstile_stream<uint16_t, int8_t> ts(s, ns);
+            stream::int_sparse_stream<stream::stream_type::turnstile> ts(s, ns);
             while (record.size() < sparsity)
             {
                 std::pair<bool, std::pair<uint16_t, int8_t>> r = ts;
@@ -74,7 +75,7 @@ int main(int argc, char *argv[])
         uint16_t correct = 0;
         for (auto const & sparse: sparses)
         {
-            std::pair<uint16_t, uint64_t> output = sparse;
+            std::pair<uint16_t, int64_t> output = sparse;
             switch (sparsity)
             {
                 case 0:
@@ -92,7 +93,69 @@ int main(int argc, char *argv[])
                     break;
             }
         }
-        std::cout << "Correct rate (" << s << " : " << ns << "): " << correct << "/" << t << std::endl;
+        std::cout << "    Correct rate (" << s << " : " << ns << "): " << correct << "/" << t << std::endl;
+    }
+
+    std::cout << "General Stream" << std::endl;
+    for (uint8_t sparsity = 0; sparsity < 5; ++sparsity)
+    {
+        uint16_t ns = s - sparsity;
+
+        std::vector<recovery::sparse_1> sparses(t);
+
+        std::unordered_map<uint16_t, int64_t> record;
+        stream::int_sparse_stream<stream::stream_type::general> gs(s, ns);
+        while (true)
+        {
+            std::pair<bool, std::pair<uint16_t, int8_t>> r = gs;
+            if (!r.first)
+                break;
+            auto const & [item, update] = r.second;
+            for (auto & sparse : sparses)
+                sparse(item, update);
+            record[item] += update;
+            if (!record[item])
+                record.erase(item);
+        }
+        while (record.size() < sparsity)
+        {
+            stream::int_sparse_stream<stream::stream_type::general> gs(s, ns);
+            while (record.size() < sparsity)
+            {
+                std::pair<bool, std::pair<uint16_t, int8_t>> r = gs;
+                if (!r.first)
+                    break;
+                auto const & [item, update] = r.second;
+                for (auto & sparse : sparses)
+                    sparse(item, update);
+                record[item] += update;
+                if (!record[item])
+                    record.erase(item);
+            }
+        }
+
+        uint16_t correct = 0;
+        for (auto const & sparse: sparses)
+        {
+            std::pair<uint16_t, int64_t> output = sparse;
+            switch (sparsity)
+            {
+                case 0:
+                    correct += output.first == 0 && output.second == 0;
+                    break;
+                case 1:
+                    {
+                        std::vector<std::pair<uint16_t, int8_t>> left = gs;
+                        auto const & [item, update] = left.back();
+                        correct += output.first == item && output.second == -update;
+                    }
+                    break;
+                default:
+                    correct += output.first == 2 && output.second == 0;
+                    break;
+            }
+        }
+        std::cout << "    Correct rate (" << s << " : " << ns << "): " << correct << "/" << t << std::endl;
     }
 
     return 0;

@@ -34,7 +34,7 @@ struct l0_insertion final
     }
 private:
     uint64_t n, m;
-    uint16_t a, *aref;
+    uint16_t a, * aref;
     hash::k_universal<uint16_t> h;
 
     l0_insertion(l0_insertion const &) = delete;
@@ -44,14 +44,14 @@ private:
 
 struct l0_general final
 {
-    l0_general(uint16_t n, double delta) : h(hash::k_universal_family(t)(), L(ceil(log(n)))), r(uint64_t(n) * n * n), t((k + 1) / 2), k(12 * log(1 / delta))
+    l0_general(uint16_t n, double delta, uint8_t t) : h(hash::k_universal_family<uint16_t>((12 * log(1 / delta) + 1) / 2)()), L(ceil(log(n))), r(uint64_t(n) * n * n)
     {
         sparses.reserve(L);
         for (uint8_t i = 0; i < L; ++i)
-            sparses.emplace(k, delta, t);
+            sparses.emplace_back(k, delta, t);
     }
 
-    l0_insertion(l0_insertion &&) = default;
+    l0_general(l0_general &&) = default;
 
     l0_general & operator()(uint16_t index, int8_t update)
     {
@@ -63,15 +63,16 @@ struct l0_general final
             ++l;
             acc /= 2;
         }
+        return *this;
     }
 
     operator std::pair<bool, uint16_t>() const
     {
         uint8_t l = 0;
-        std::unordered_map<uint16_t, uint64_t> output;
+        std::unordered_map<uint16_t, int64_t> output;
         while (l < L)
         {
-            std::unordered_map<uint16_t, uint64_t> r = sparses[l++];
+            std::unordered_map<uint16_t, int64_t> r = sparses[l++];
             if (r.size() > 0)
             {
                 output = std::move(r);
@@ -94,10 +95,14 @@ struct l0_general final
         return { true, mi };
     }
 private:
-    uint64_t k, t, r;
+    uint64_t r;
     uint8_t L;
     hash::k_universal<uint16_t> h;
     std::vector<recovery::sparse_k> sparses;
+
+    l0_general(l0_general const &) = delete;
+    l0_general & operator=(l0_general const &) = delete;
+    l0_general & operator=(l0_general &&) = delete;
 };
 
 }

@@ -7,18 +7,18 @@
 #include <boost/program_options.hpp>
 
 #include "hash.hpp"
-#include "recovery.h"
+#include "sampler.hpp"
 
-int main(int argc, char *argv[])
+int main(int argc, char * argv[])
 {
     boost::program_options::options_description cli("Options");
     cli.add_options()
     ("help,h", "help")
     ("epsilon,e", boost::program_options::value<double>(), "epsilon value used in l0 sampling, must be in [0, 1], defaults to 1e-8")
     ("probability,p", boost::program_options::value<double>(), "success probability for binomial distribution, must be in [0, 1], defaults to 0.5")
-    ("range,r", boost::program_options::value<uint64_t>(), "data range, must be positive, defaults to the stream size / 100")
-    ("size,s", boost::program_options::value<uint64_t>(), "stream size, must be positive, defaults to 10000")
-    ("trial,t", boost::program_options::value<uint64_t>(), "number of trials, must be positive, defaults to 10 * range");
+    ("range,r", boost::program_options::value<uint16_t>(), "data range, must be positive, defaults to the stream size / 100")
+    ("size,s", boost::program_options::value<uint16_t>(), "stream size, must be positive, defaults to 10000")
+    ("trial,t", boost::program_options::value<uint16_t>(), "number of trials, must be positive, defaults to 10 * range");
 
     boost::program_options::variables_map options;
     boost::program_options::store(boost::program_options::parse_command_line(argc, argv, cli), options);
@@ -52,28 +52,26 @@ int main(int argc, char *argv[])
         }
     }
 
-    uint64_t s = 10000;
+    uint16_t s = 10000;
     if (options.count("size"))
-        s = options["size"].as<uint64_t>();
+        s = options["size"].as<uint16_t>();
 
-    uint64_t r = s / 100;
+    uint16_t r = s / 100;
     if (options.count("range"))
-        r = options["range"].as<uint64_t>();
+        r = options["range"].as<uint16_t>();
 
-    uint64_t t = 10 * r;
+    uint16_t t = 10 * r;
     if (options.count("trial"))
-        t = options["trial"].as<uint64_t>();
-
-    using ItemType = uint64_t;
+        t = options["trial"].as<uint16_t>();
 
     // used to record distribution
-    std::vector<ItemType> vs(r), vlk(r);
+    std::vector<uint16_t> vs(r), vlk(r);
     std::mt19937_64 g { std::random_device()() };
     uint8_t const k = log2(floor(1 / e));
-    hash::k_universal_family<ItemType> kuf(k);
+    hash::k_universal_family<uint16_t> kuf(k);
 
-    std::uniform_int_distribution<ItemType> ud(0, r - 1);
-    std::vector<sampler::l0_insertion<ItemType>> l0ks;
+    std::uniform_int_distribution<uint16_t> ud(0, r - 1);
+    std::vector<sampler::l0_insertion> l0ks;
     l0ks.reserve(t);
     for (uint64_t i = 0; i < t; ++i)
         l0ks.emplace_back(r, kuf());
@@ -89,10 +87,10 @@ int main(int argc, char *argv[])
     for (uint64_t i = 0; i < r; ++i)
         std::cout << i << " " << vs[i] << " " << vlk[i] << std::endl;
 
-    vs = std::vector<ItemType>(r);
-    vlk = std::vector<ItemType>(r);
+    vs = std::vector<uint16_t>(r);
+    vlk = std::vector<uint16_t>(r);
 
-    std::binomial_distribution<ItemType> ub(r - 1, p);
+    std::binomial_distribution<uint16_t> ub(r - 1, p);
     l0ks.clear();
     for (uint64_t i = 0; i < t; ++i)
         l0ks.emplace_back(r, kuf());

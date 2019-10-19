@@ -7,18 +7,21 @@ define compile_exe
 endef
 
 define execute_test
-	$1 --logger=HRF,all --color_output=false --report_format=HRF
+	$1 --logger=HRF,test_suite --color_output=true --report_format=HRF
 endef
 
 all: $(BIN_DIR)/a $(BIN_DIR)/b
 
-$(BIN_DIR)/a: a_main.cpp prime.hpp hash.hpp sampler.h
+$(BIN_DIR)/a: a_main.cpp prime.hpp hash.hpp sampler.hpp
 	$(call compile_exe,$(BIN_DIR),$@,$^,-lboost_program_options)
 
-$(BIN_DIR)/b: b_main.cpp prime.hpp hash.hpp recovery.h
+$(BIN_DIR)/b: b_main.cpp prime.hpp hash.hpp recovery.h stream.hpp
 	$(call compile_exe,$(BIN_DIR),$@,$^,-lboost_program_options)
 
-$(BIN_DIR)/c: c_main.cpp prime.hpp hash.hpp recovery.h
+$(BIN_DIR)/c: c_main.cpp prime.hpp hash.hpp recovery.h stream.hpp
+	$(call compile_exe,$(BIN_DIR),$@,$^,-lboost_program_options)
+
+$(BIN_DIR)/d: d_main.cpp prime.hpp hash.hpp sampler.hpp recovery.h stream.hpp
 	$(call compile_exe,$(BIN_DIR),$@,$^,-lboost_program_options)
 
 tests: $(TEST_DIR)/hash_test $(TEST_DIR)/stream_test

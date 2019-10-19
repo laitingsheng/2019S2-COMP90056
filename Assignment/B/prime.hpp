@@ -9,7 +9,8 @@ namespace prime
 
 struct mersenne final
 {
-    uint64_t const s, p;
+    uint8_t const s;
+    uint64_t const p;
 
     template<typename T, std::enable_if_t<std::is_unsigned_v<T>, bool> = true>
     inline constexpr uint64_t operator()(T k) const noexcept
@@ -26,11 +27,10 @@ struct mersenne final
     }
 private:
     friend struct mersennes;
-    constexpr mersenne(uint64_t s) noexcept : p((uint64_t(1) << s) - 1), s(s) {}
+    constexpr mersenne(uint8_t s) noexcept : p((uint64_t(1) << s) - 1), s(s) {}
 
     mersenne(mersenne const &) = delete;
     mersenne(mersenne &&) = delete;
-
     mersenne & operator=(mersenne const &) = delete;
     mersenne & operator=(mersenne &&) = delete;
 };

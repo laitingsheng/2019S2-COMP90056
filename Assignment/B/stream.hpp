@@ -3,25 +3,25 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <limits>
 #include <random>
 #include <stdexcept>
+#include <type_traits>
 #include <vector>
 
 namespace stream
 {
 
-template<typename T, typename U>
-struct turnstile_stream;
-
-template<>
-struct turnstile_stream<uint16_t, int8_t> final
+enum class stream_type
 {
-    turnstile_stream(uint64_t pn, uint64_t nn) : ud(1), id(1), g(rd()), nn(nn), pn(pn)
-    {
-        if (nn > pn)
-            throw std::invalid_argument("invalid turnstile stream");
-        generated.reserve(nn);
-    }
+    turnstile,
+    general
+};
+
+template<stream_type ST>
+struct int_sparse_stream final
+{
+    int_sparse_stream(uint64_t, uint64_t);
 
     operator std::pair<bool, std::pair<uint16_t, int8_t>>()
     {
@@ -37,6 +37,10 @@ struct turnstile_stream<uint16_t, int8_t> final
             return { false, {} };
         uint16_t item = id(g);
         int8_t update = ud(g);
+        if constexpr (ST == stream_type::general)
+            // ignore zero update
+            while (!update)
+                update = ud(g);
         generated.emplace_back(item, -update);
         --pn;
         return { true, { item, update } };
@@ -47,7 +51,7 @@ struct turnstile_stream<uint16_t, int8_t> final
         return generated;
     }
 private:
-    friend struct turnstile_stream_tester;
+    friend struct int_sparse_stream_tester;
 
     static std::random_device rd;
 
@@ -60,14 +64,28 @@ private:
 
     std::vector<std::pair<uint16_t, int8_t>> generated;
 
-    turnstile_stream(turnstile_stream const &) = delete;
-    turnstile_stream(turnstile_stream &&) = delete;
+    int_sparse_stream(uint64_t pn, uint64_t nn, int8_t umin) : ud(umin), id(1), g(rd()), nn(nn), pn(pn)
+    {
+        if (nn > pn)
+            throw std::invalid_argument("invalid sparse stream");
+        generated.reserve(nn);
+    }
 
-    turnstile_stream operator=(turnstile_stream const &) = delete;
-    turnstile_stream operator=(turnstile_stream &&) = delete;
+    int_sparse_stream(int_sparse_stream const &) = delete;
+    int_sparse_stream(int_sparse_stream &&) = delete;
+    int_sparse_stream operator=(int_sparse_stream const &) = delete;
+    int_sparse_stream operator=(int_sparse_stream &&) = delete;
 };
 
-std::random_device turnstile_stream<uint16_t, int8_t>::rd {};
+template<>
+int_sparse_stream<stream_type::turnstile>::int_sparse_stream(uint64_t pn, uint64_t nn) : int_sparse_stream(pn, nn, 1) {}
+
+// -(-128) is 0 for int8_t so ignore it
+template<>
+int_sparse_stream<stream_type::general>::int_sparse_stream(uint64_t pn, uint64_t nn) : int_sparse_stream(pn, nn, std::numeric_limits<int8_t>::min() + 1) {}
+
+template<stream_type ST>
+std::random_device int_sparse_stream<ST>::rd {};
 
 }
 

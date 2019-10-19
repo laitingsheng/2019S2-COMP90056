@@ -50,6 +50,7 @@ int main(int argc, char *argv[])
     if (options.count("trial"))
         t = options["trial"].as<uint16_t>();
 
+    std::cout << "Turnstile Stream" << std::endl;
     for (uint8_t sparsity = 0; sparsity <= 2 * k; ++sparsity)
     {
         uint16_t ns = s - sparsity;
@@ -59,8 +60,8 @@ int main(int argc, char *argv[])
         for (uint16_t i = 0; i < t; ++i)
             sparses.emplace_back(k, d, l);
 
-        std::unordered_map<uint16_t, uint64_t> record;
-        stream::turnstile_stream<uint16_t, int8_t> ts(s, ns);
+        std::unordered_map<uint16_t, int64_t> record;
+        stream::int_sparse_stream<stream::stream_type::turnstile> ts(s, ns);
         while (true)
         {
             std::pair<bool, std::pair<uint16_t, int8_t>> r = ts;
@@ -75,7 +76,7 @@ int main(int argc, char *argv[])
         }
         while (record.size() < sparsity)
         {
-            stream::turnstile_stream<uint16_t, int8_t> ts(s, ns);
+            stream::int_sparse_stream<stream::stream_type::turnstile> ts(s, ns);
             while (record.size() < sparsity)
             {
                 std::pair<bool, std::pair<uint16_t, int8_t>> r = ts;
@@ -93,13 +94,66 @@ int main(int argc, char *argv[])
         uint16_t correct = 0;
         for (auto const & sparse: sparses)
         {
-            std::unordered_map<uint16_t, uint64_t> output = sparse;
+            std::unordered_map<uint16_t, int64_t> output = sparse;
             if (sparsity == 0 || sparsity > k)
                 correct += output.size() == 0;
             else
                 correct += output == record;
         }
-        std::cout << "Correct rate (" << s << " : " << ns << "): " << correct << "/" << t << std::endl;
+        std::cout << "    Correct rate (" << s << " : " << ns << "): " << correct << "/" << t << std::endl;
+    }
+
+    std::cout << "General Stream" << std::endl;
+    for (uint8_t sparsity = 0; sparsity <= 2 * k; ++sparsity)
+    {
+        uint16_t ns = s - sparsity;
+
+        std::vector<recovery::sparse_k> sparses;
+        sparses.reserve(t);
+        for (uint16_t i = 0; i < t; ++i)
+            sparses.emplace_back(k, d, l);
+
+        std::unordered_map<uint16_t, int64_t> record;
+        stream::int_sparse_stream<stream::stream_type::general> gs(s, ns);
+        while (true)
+        {
+            std::pair<bool, std::pair<uint16_t, int8_t>> r = gs;
+            if (!r.first)
+                break;
+            auto const & [item, update] = r.second;
+            for (auto & sparse : sparses)
+                sparse(item, update);
+            record[item] += update;
+            if (!record[item])
+                record.erase(item);
+        }
+        while (record.size() < sparsity)
+        {
+            stream::int_sparse_stream<stream::stream_type::general> gs(s, ns);
+            while (record.size() < sparsity)
+            {
+                std::pair<bool, std::pair<uint16_t, int8_t>> r = gs;
+                if (!r.first)
+                    break;
+                auto const & [item, update] = r.second;
+                for (auto & sparse : sparses)
+                    sparse(item, update);
+                record[item] += update;
+                if (!record[item])
+                    record.erase(item);
+            }
+        }
+
+        uint16_t correct = 0;
+        for (auto const & sparse: sparses)
+        {
+            std::unordered_map<uint16_t, int64_t> output = sparse;
+            if (sparsity == 0 || sparsity > k)
+                correct += output.size() == 0;
+            else
+                correct += output == record;
+        }
+        std::cout << "    Correct rate (" << s << " : " << ns << "): " << correct << "/" << t << std::endl;
     }
 
     return 0;
