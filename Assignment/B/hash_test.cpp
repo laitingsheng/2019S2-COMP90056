@@ -1,8 +1,6 @@
 #define BOOST_TEST_MODULE KHash Unit Test
 
 #include <cstdint>
-#include <limits>
-#include <random>
 
 #include <boost/test/included/unit_test.hpp>
 
@@ -14,7 +12,7 @@ namespace hash
 
 struct k_universal_tester final
 {
-    static void test_trivial()
+    void test_trivial()
     {
         // integer hash is trivial and perfect
         BOOST_REQUIRE_EQUAL(k_universal<uint8_t>::basic(item), item);

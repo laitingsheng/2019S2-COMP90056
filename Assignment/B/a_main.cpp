@@ -4,10 +4,10 @@
 #include <random>
 #include <vector>
 
-#include<boost/program_options.hpp>
+#include <boost/program_options.hpp>
 
 #include "hash.hpp"
-#include "sampler.hpp"
+#include "recovery.h"
 
 int main(int argc, char *argv[])
 {

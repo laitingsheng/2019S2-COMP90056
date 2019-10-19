@@ -10,23 +10,26 @@ define execute_test
 	$1 --logger=HRF,all --color_output=false --report_format=HRF
 endef
 
-define execute_tests
-	$(foreach exe,$(1),$(call execute_test,$(exe)))
-endef
-
 all: $(BIN_DIR)/a $(BIN_DIR)/b
 
-$(BIN_DIR)/a: a_main.cpp sampler.hpp hash.hpp prime.hpp
+$(BIN_DIR)/a: a_main.cpp prime.hpp hash.hpp sampler.h
 	$(call compile_exe,$(BIN_DIR),$@,$^,-lboost_program_options)
 
-$(BIN_DIR)/b: b_main.cpp recovery.hpp prime.hpp
+$(BIN_DIR)/b: b_main.cpp prime.hpp hash.hpp recovery.h
 	$(call compile_exe,$(BIN_DIR),$@,$^,-lboost_program_options)
 
-tests: $(TEST_DIR)/hash_test
-	$(call execute_tests,$^)
+$(BIN_DIR)/c: c_main.cpp prime.hpp hash.hpp recovery.h
+	$(call compile_exe,$(BIN_DIR),$@,$^,-lboost_program_options)
+
+tests: $(TEST_DIR)/hash_test $(TEST_DIR)/stream_test
 
 $(TEST_DIR)/hash_test: hash_test.cpp hash.hpp prime.hpp
 	$(call compile_exe,$(TEST_DIR),$@,$^)
+	$(call execute_test,$@)
+
+$(TEST_DIR)/stream_test: stream_test.cpp stream.hpp
+	$(call compile_exe,$(TEST_DIR),$@,$^)
+	$(call execute_test,$@)
 
 part1: part1.tex
 	pdflatex -jobname=$@ $^
@@ -34,7 +37,7 @@ part1: part1.tex
 report: report.tex
 	pdflatex -jobname=$@ $^
 
-cms.zip: $(SRC) Makefile
+assignment.zip: *.h *.hpp *.cpp Makefile
 	zip -u9 $@ $^
 
 .PHONY: clean

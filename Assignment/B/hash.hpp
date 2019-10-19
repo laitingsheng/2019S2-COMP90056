@@ -1,5 +1,5 @@
-#ifndef __K_HASH_HPP__
-#define __K_HASH_HPP__
+#ifndef __HASH_HPP__
+#define __HASH_HPP__
 
 #include <cstdint>
 
@@ -16,8 +16,7 @@ struct k_universal final
 {
     using ItemType = T;
 
-    k_universal(k_universal const &) = default;
-    k_universal(k_universal &&) = default;
+    k_universal(k_universal &&) noexcept = default;
 
     inline constexpr uint64_t operator()(T item) const noexcept
     {
@@ -42,6 +41,7 @@ private:
 
     k_universal(uint64_t a, std::vector<uint64_t> && as) noexcept : as(as), a(a) {}
 
+    k_universal(k_universal const &) = delete;
     k_universal & operator=(k_universal const &) = delete;
     k_universal & operator=(k_universal &&) = delete;
 };
@@ -84,7 +84,6 @@ private:
 
     k_universal_family(k_universal_family const &) = delete;
     k_universal_family(k_universal_family &&) = delete;
-
     k_universal_family & operator=(k_universal_family const &) = delete;
     k_universal_family & operator=(k_universal_family &&) = delete;
 };

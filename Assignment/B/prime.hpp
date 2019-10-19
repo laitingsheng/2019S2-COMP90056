@@ -1,5 +1,5 @@
-#ifndef __PRIME_H_
-#define __PRIME_H_
+#ifndef __PRIME_HPP_
+#define __PRIME_HPP_
 
 #include <cstdint>
 #include <type_traits>
@@ -7,7 +7,7 @@
 namespace prime
 {
 
-struct mersenne
+struct mersenne final
 {
     uint64_t const s, p;
 
@@ -37,6 +37,9 @@ private:
 
 struct mersennes
 {
+    static constexpr mersenne mersenne7 { 7 };
+    static constexpr mersenne mersenne13 { 13 };
+    static constexpr mersenne mersenne17 { 17 };
     static constexpr mersenne mersenne31 { 31 };
 };
 
