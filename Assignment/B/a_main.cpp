@@ -36,7 +36,7 @@ int main(int argc, char * argv[])
         e = options["epsilon"].as<double>();
         if (e <= 0 || e >= 1)
         {
-            std::cerr << "-e requires a value in range [0, 1]" << std::endl;
+            std::cerr << "-e requires a value in range (0, 1)" << std::endl;
             return 1;
         }
     }
@@ -47,7 +47,7 @@ int main(int argc, char * argv[])
         p = options["probability"].as<double>();
         if (p <= 0 || p >= 1)
         {
-            std::cerr << "-p requires a value in range [0, 1]" << std::endl;
+            std::cerr << "-p requires a value in range (0, 1)" << std::endl;
             return 1;
         }
     }

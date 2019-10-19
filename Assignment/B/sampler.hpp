@@ -46,6 +46,7 @@ struct l0_general final
 {
     l0_general(uint16_t n, double delta, uint8_t t) : h(hash::k_universal_family<uint16_t>((12 * log(1 / delta) + 1) / 2)()), L(ceil(log(n))), r(uint64_t(n) * n * n)
     {
+        uint8_t k = 12 * log(1 / delta);
         sparses.reserve(L);
         for (uint8_t i = 0; i < L; ++i)
             sparses.emplace_back(k, delta, t);
@@ -57,10 +58,10 @@ struct l0_general final
     {
         uint8_t l = 0;
         double acc = r;
-        while (l < L && acc >= h(index) % r)
+        uint64_t hv = h(index) % r;
+        while (l < L && acc >= hv)
         {
-            sparses[l](index, update);
-            ++l;
+            sparses[l++](index, update);
             acc /= 2;
         }
         return *this;
@@ -81,7 +82,7 @@ struct l0_general final
         }
         if (!output.size())
             return { false, 0 };
-        uint16_t mi;
+        uint16_t mi = 0;
         uint64_t mh = std::numeric_limits<uint64_t>::max();
         for (auto const & [k, v] : output)
         {

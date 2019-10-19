@@ -32,7 +32,14 @@ int main(int argc, char *argv[])
 
     double d = 0.1;
     if (options.count("delta"))
+    {
         d = options["delta"].as<double>();
+        if (d <= 0 || d >= 1)
+        {
+            std::cerr << "-d requires a value in range (0, 1)" << std::endl;
+            return 1;
+        }
+    }
 
     uint16_t k = 10;
     if (options.count("k-sparse"))
