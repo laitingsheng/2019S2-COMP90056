@@ -5,10 +5,6 @@
 
 #include <random>
 
-// share across all instantiations of template
-static std::uniform_real_distribution<> r;
-static std::mt19937_64 g { std::random_device()() };
-
 struct morris_counter final
 {
     inline morris_counter & operator+=(uint64_t freq)
@@ -28,7 +24,13 @@ struct morris_counter final
         return (1UL << c) - 1;
     }
 private:
+    static std::uniform_real_distribution<> r;
+    static std::mt19937_64 g;
+
     uint8_t c = 0;
 };
+
+std::uniform_real_distribution<> morris_counter::r {};
+std::mt19937_64 morris_counter::g { std::random_device()() };
 
 #endif

@@ -11,3 +11,8 @@ report: report.tex
 
 cms.zip: $(SRC)
 	zip -u9 $@ $^ Makefile
+
+.PHONY: clean
+
+clean:
+	rm -rf main

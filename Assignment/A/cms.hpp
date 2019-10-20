@@ -3,6 +3,9 @@
 
 #include <cstdint>
 
+#include <fstream>
+#include <iomanip>
+
 #include "hash.hpp"
 #include "morris.hpp"
 #include "utils.hpp"
@@ -10,6 +13,8 @@
 template<typename Type, typename CounterType = uint64_t, typename QueryType = CounterType>
 struct cms_template
 {
+    double const epsilon, delta;
+
     // prevent copy and move
     cms_template(cms_template const &) = delete;
     cms_template(cms_template &&) = delete;
@@ -57,36 +62,20 @@ protected:
     cms_template(double epsilon, double delta) : counters(new CounterType[w * d]()),
                                                  hashes(new hash<Type>[d]()),
                                                  d(ceil(log2(1 / delta))),
-                                                 w(ceil(2 / epsilon)) {}
+                                                 w(ceil(2 / epsilon)),
+                                                 delta(delta),
+                                                 epsilon(epsilon) {}
 };
 
 template<typename Type, typename CounterType = uint64_t>
 struct cms_default final : public cms_template<Type, CounterType>
 {
-    using item_type = Type;
-    using counter_type = CounterType;
-    using query_type = counter_type;
-
-    static inline constexpr std::string name()
-    {
-        return std::string("Default<") + type_name<Type>::name + ">";
-    }
-
     explicit cms_default(double epsilon, double delta) : cms_template<Type, CounterType>(epsilon, delta) {}
 };
 
 template<typename Type, typename CounterType = uint64_t>
 struct cms_conservative final : public cms_template<Type, CounterType>
 {
-    using item_type = Type;
-    using counter_type = CounterType;
-    using query_type = counter_type;
-
-    static inline constexpr std::string name()
-    {
-        return std::string("Conservative<") + type_name<Type>::name + ">";
-    }
-
     explicit cms_conservative(double epsilon, double delta) : cms_template<Type, CounterType>(epsilon, delta) {}
 
     virtual void update(Type item, CounterType freq) override
@@ -101,30 +90,18 @@ struct cms_conservative final : public cms_template<Type, CounterType>
     }
 };
 
-// TODO: Modify below
-
 template<typename Type, typename QueryType, bool = std::is_unsigned_v<QueryType>>
 struct cms_morris;
 
 template<typename Type, typename QueryType>
 struct cms_morris<Type, QueryType, true> final : public cms_template<Type, morris_counter, QueryType>
 {
-    static inline constexpr std::string name()
-    {
-        return std::string("Morris<") + type_name<Type>::name + ">";
-    }
-
     explicit cms_morris(double epsilon, double delta) : cms_template<Type, morris_counter, QueryType>(epsilon, delta) {}
 };
 
 template<typename Type, typename QueryType>
 struct cms_morris<Type, QueryType, false> final : public cms_template<Type, morris_counter, QueryType>
 {
-    static inline constexpr std::string name()
-    {
-        return std::string("Morris<") + type_name<Type>::name + ">";
-    }
-
     virtual std::size_t memory_allocated() const
     {
         return sizeof(hash<Type>) * this->d + sizeof(morris_counter) * this->d * this->w * 2;
@@ -144,8 +121,11 @@ struct cms_morris<Type, QueryType, false> final : public cms_template<Type, morr
         if (!freq)
             return;
         if (freq < 0)
+        {
+            freq = -freq;
             for (auto i = 0UL; i < this->d; ++i)
                 counters_neg[i * this->w + this->hashes[i](item, this->w)] += freq;
+        }
         else
             for (auto i = 0UL; i < this->d; ++i)
                 this->counters[i * this->w + this->hashes[i](item, this->w)] += freq;
