@@ -81,22 +81,6 @@ int main(int argc, char *argv[])
             if (!record[item])
                 record.erase(item);
         }
-        while (record.size() < sparsity)
-        {
-            stream::int_sparse_stream<stream::stream_type::turnstile> ts(s, ns);
-            while (record.size() < sparsity)
-            {
-                std::pair<bool, std::pair<uint16_t, int8_t>> r = ts;
-                if (!r.first)
-                    break;
-                auto const & [item, update] = r.second;
-                for (auto & sparse : sparses)
-                    sparse(item, update);
-                record[item] += update;
-                if (!record[item])
-                    record.erase(item);
-            }
-        }
 
         uint16_t correct = 0;
         for (auto const & sparse: sparses)
@@ -133,22 +117,6 @@ int main(int argc, char *argv[])
             record[item] += update;
             if (!record[item])
                 record.erase(item);
-        }
-        while (record.size() < sparsity)
-        {
-            stream::int_sparse_stream<stream::stream_type::general> gs(s, ns);
-            while (record.size() < sparsity)
-            {
-                std::pair<bool, std::pair<uint16_t, int8_t>> r = gs;
-                if (!r.first)
-                    break;
-                auto const & [item, update] = r.second;
-                for (auto & sparse : sparses)
-                    sparse(item, update);
-                record[item] += update;
-                if (!record[item])
-                    record.erase(item);
-            }
         }
 
         uint16_t correct = 0;

@@ -47,7 +47,8 @@ int main(int argc, char * argv[])
         t = options["trial"].as<uint16_t>();
 
     std::cout << "Turnstile Stream" << std::endl;
-    for (uint8_t sparsity = s / 2; sparsity < s; ++sparsity)
+    #pragma omp parallel for
+    for (uint16_t sparsity = s / 2; sparsity < s; ++sparsity)
     {
         uint16_t ns = s - sparsity;
 
@@ -70,22 +71,6 @@ int main(int argc, char * argv[])
             if (!record[item])
                 record.erase(item);
         }
-        while (record.size() < sparsity)
-        {
-            stream::int_sparse_stream<stream::stream_type::turnstile> ts(s, ns);
-            while (record.size() < sparsity)
-            {
-                std::pair<bool, std::pair<uint16_t, int8_t>> r = ts;
-                if (!r.first)
-                    break;
-                auto const & [item, update] = r.second;
-                for (auto & l0 : l0s)
-                    l0(item, update);
-                record[item] += update;
-                if (!record[item])
-                    record.erase(item);
-            }
-        }
 
         std::unordered_map<uint16_t, int64_t> samples;
         uint16_t failure = 0;
@@ -97,7 +82,7 @@ int main(int argc, char * argv[])
             else
                 ++failure;
         }
-        std::cout << "    Failure rate (" << s << " : " << ns << "): " << failure << "/" << t << std::endl;
+        printf("    Failure rate (%lu : %lu): %ld/%ld\n", uint64_t(s), uint64_t(ns), int64_t(failure), int64_t(t));
     }
 
     // std::cout << "General Stream" << std::endl;

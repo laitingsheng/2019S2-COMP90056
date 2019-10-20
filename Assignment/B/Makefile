@@ -22,7 +22,7 @@ $(BIN_DIR)/c: c_main.cpp prime.hpp hash.hpp recovery.h stream.hpp
 	$(call compile_exe,$(BIN_DIR),$@,$^,-lboost_program_options)
 
 $(BIN_DIR)/d: d_main.cpp prime.hpp hash.hpp sampler.hpp recovery.h stream.hpp
-	$(call compile_exe,$(BIN_DIR),$@,$^,-lboost_program_options)
+	$(call compile_exe,$(BIN_DIR),$@,$^,-lboost_program_options -fopenmp)
 
 tests: $(TEST_DIR)/hash_test $(TEST_DIR)/stream_test
 

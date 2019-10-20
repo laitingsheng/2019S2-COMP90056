@@ -31,13 +31,15 @@ struct int_sparse_stream_tester final
                     BOOST_REQUIRE_GE(record[item], -update);
             record[item] += update;
         }
-        BOOST_REQUIRE_EQUAL(g.pn, 0);
-        BOOST_REQUIRE_EQUAL(g.nn, 0);
+        BOOST_REQUIRE_EQUAL(g.history.size(), pn);
         uint64_t count = 0;
         for (auto const & [k, v] : record)
-            count += v != 0;
-        BOOST_REQUIRE_LE(count, pn - nn);
-        BOOST_REQUIRE_EQUAL(g.generated.size(), pn - nn);
+            if constexpr (ST == stream_type::turnstile)
+                count += v > 0;
+            else
+                count += v != 0;
+        BOOST_REQUIRE_EQUAL(count, pn - nn);
+        BOOST_REQUIRE_EQUAL(g.left.size(), pn - nn);
     }
 };
 
