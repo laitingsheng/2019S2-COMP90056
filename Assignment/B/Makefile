@@ -40,7 +40,7 @@ part1: part1.tex
 report: report.tex
 	pdflatex -jobname=$@ $^
 
-assignment.zip: *.h *.hpp *.cpp Makefile
+assignment.zip: *.h *.hpp Makefile
 	zip -u9 $@ $^
 
 .PHONY: clean

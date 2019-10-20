@@ -27,7 +27,7 @@ int main(int argc, char * argv[])
         return 0;
     }
 
-    double d = 1e-2;
+    double d = 0.1;
     if (options.count("delta"))
     {
         d = options["delta"].as<double>();
@@ -46,16 +46,14 @@ int main(int argc, char * argv[])
     if (options.count("trial"))
         t = options["trial"].as<uint16_t>();
 
-    std::cout << "Turnstile Stream" << std::endl;
-    #pragma omp parallel for
-    for (uint16_t sparsity = s / 2; sparsity < s; ++sparsity)
+    for (uint16_t sparsity = 50; sparsity < 60; ++sparsity)
     {
         uint16_t ns = s - sparsity;
 
         std::vector<sampler::l0_general> l0s;
         l0s.reserve(t);
         for (uint16_t i = 0; i < t; ++i)
-            l0s.emplace_back(std::numeric_limits<uint16_t>::max(), d, t);
+            l0s.emplace_back(std::numeric_limits<uint16_t>::max(), d);
 
         std::unordered_map<uint16_t, int64_t> record;
         stream::int_sparse_stream<stream::stream_type::turnstile> ts(s, ns);
@@ -82,61 +80,49 @@ int main(int argc, char * argv[])
             else
                 ++failure;
         }
-        printf("    Failure rate (%lu : %lu): %ld/%ld\n", uint64_t(s), uint64_t(ns), int64_t(failure), int64_t(t));
+        std::cout << failure << std::endl;
+        for (auto const & [k, v] : record)
+            std::cout << k << " " << v << " " << samples[k] << std::endl;
     }
 
-    // std::cout << "General Stream" << std::endl;
-    // for (uint8_t sparsity = 0; sparsity <= 2 * k; ++sparsity)
-    // {
-    //     uint16_t ns = s - sparsity;
+    for (uint16_t sparsity = 50; sparsity < 60; ++sparsity)
+    {
+        uint16_t ns = s - sparsity;
 
-    //     std::vector<sampler::l0_general> l0s;
-    //     sparses.reserve(t);
-    //     for (uint16_t i = 0; i < t; ++i)
-    //         sparses.emplace_back(k, d, l);
+        std::vector<sampler::l0_general> l0s;
+        l0s.reserve(t);
+        for (uint16_t i = 0; i < t; ++i)
+            l0s.emplace_back(std::numeric_limits<uint16_t>::max(), d);
 
-    //     std::unordered_map<uint16_t, int64_t> record;
-    //     stream::int_sparse_stream<stream::stream_type::general> gs(s, ns);
-    //     while (true)
-    //     {
-    //         std::pair<bool, std::pair<uint16_t, int8_t>> r = gs;
-    //         if (!r.first)
-    //             break;
-    //         auto const & [item, update] = r.second;
-    //         for (auto & sparse : sparses)
-    //             sparse(item, update);
-    //         record[item] += update;
-    //         if (!record[item])
-    //             record.erase(item);
-    //     }
-    //     while (record.size() < sparsity)
-    //     {
-    //         stream::int_sparse_stream<stream::stream_type::general> gs(s, ns);
-    //         while (record.size() < sparsity)
-    //         {
-    //             std::pair<bool, std::pair<uint16_t, int8_t>> r = gs;
-    //             if (!r.first)
-    //                 break;
-    //             auto const & [item, update] = r.second;
-    //             for (auto & sparse : sparses)
-    //                 sparse(item, update);
-    //             record[item] += update;
-    //             if (!record[item])
-    //                 record.erase(item);
-    //         }
-    //     }
+        std::unordered_map<uint16_t, int64_t> record;
+        stream::int_sparse_stream<stream::stream_type::general> ts(s, ns);
+        while (true)
+        {
+            std::pair<bool, std::pair<uint16_t, int8_t>> r = ts;
+            if (!r.first)
+                break;
+            auto const & [item, update] = r.second;
+            for (auto & l0 : l0s)
+                l0(item, update);
+            record[item] += update;
+            if (!record[item])
+                record.erase(item);
+        }
 
-    //     uint16_t correct = 0;
-    //     for (auto const & sparse: sparses)
-    //     {
-    //         std::unordered_map<uint16_t, int64_t> output = sparse;
-    //         if (sparsity == 0 || sparsity > k)
-    //             correct += output.size() == 0;
-    //         else
-    //             correct += output == record;
-    //     }
-    //     std::cout << "    Correct rate (" << s << " : " << ns << "): " << correct << "/" << t << std::endl;
-    // }
+        std::unordered_map<uint16_t, int64_t> samples;
+        uint16_t failure = 0;
+        for (auto const & l0 : l0s)
+        {
+            std::pair<bool, uint16_t> re = l0;
+            if (re.first)
+                ++samples[re.second];
+            else
+                ++failure;
+        }
+        std::cout << failure << std::endl;
+        for (auto const & [k, v] : record)
+            std::cout << k << " " << v << " " << samples[k] << std::endl;
+    }
 
     return 0;
 }

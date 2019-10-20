@@ -44,9 +44,8 @@ private:
 
 struct l0_general final
 {
-    l0_general(uint16_t n, double delta, uint8_t t) : h(hash::k_universal_family<uint16_t>((12 * log(1 / delta) + 1) / 2)()), L(ceil(log(n))), r(uint64_t(n) * n * n)
+    l0_general(uint16_t n, double delta) : h(hash::k_universal_family<uint16_t>(t)()), L(ceil(log(n))), r(uint64_t(n) * n * n), t((k + 1) / 2), k(12 * log(1 / delta))
     {
-        uint8_t k = 12 * log(1 / delta);
         sparses.reserve(L);
         for (uint8_t i = 0; i < L; ++i)
             sparses.emplace_back(k, delta, t);
@@ -56,12 +55,13 @@ struct l0_general final
 
     l0_general & operator()(uint16_t index, int8_t update)
     {
-        uint8_t l = 0;
         double acc = r;
         uint64_t hv = h(index) % r;
-        while (l < L && acc >= hv)
+        for (auto & sparse : sparses)
         {
-            sparses[l++](index, update);
+            if (acc < hv)
+                break;
+            sparse(index, update);
             acc /= 2;
         }
         return *this;
@@ -69,35 +69,23 @@ struct l0_general final
 
     operator std::pair<bool, uint16_t>() const
     {
-        uint8_t l = 0;
-        std::unordered_map<uint16_t, int64_t> output;
-        while (l < L)
+        for (auto const & sparse : sparses)
         {
-            std::unordered_map<uint16_t, int64_t> r = sparses[l++];
-            if (r.size() > 0)
-            {
-                output = std::move(r);
-                break;
-            }
+            std::unordered_map<uint16_t, int64_t> re = sparse;
+            if (re.size())
+                return { true, std::min_element(re.begin(),
+                                                re.end(),
+                                                [this](auto const & a, auto const & b) -> bool
+                                                {
+                                                    return h(a.first) % r < h(b.first) % r;
+                                                })->first };
         }
-        if (!output.size())
-            return { false, 0 };
-        uint16_t mi = 0;
-        uint64_t mh = std::numeric_limits<uint64_t>::max();
-        for (auto const & [k, v] : output)
-        {
-            uint64_t hr = h(k) % r;
-            if (hr < mh)
-            {
-                mh = hr;
-                mi = k;
-            }
-        }
-        return { true, mi };
+        return { false, 0 };
     }
 private:
     uint64_t r;
-    uint8_t L;
+    uint16_t k;
+    uint8_t L, t;
     hash::k_universal<uint16_t> h;
     std::vector<recovery::sparse_k> sparses;
 

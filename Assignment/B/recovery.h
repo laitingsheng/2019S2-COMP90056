@@ -71,7 +71,7 @@ private:
 };
 
 // it will be nonsense to have q = 0
-std::uniform_int_distribution<uint32_t> sparse_1::d { 1, mp.p - 1 };
+std::uniform_int_distribution<uint32_t> sparse_1::d { 2, mp.p - 1 };
 std::mt19937 sparse_1::g { std::random_device()() };
 
 struct sparse_k final
