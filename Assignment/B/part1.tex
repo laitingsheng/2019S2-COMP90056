@@ -4,6 +4,8 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 
+\setlength{\parindent}{0em}
+
 \title{\textbf{COMP90056 Assignment A}}
 \author{Tingsheng (Tinson) Lai (731319)}
 \date{\today}
@@ -11,27 +13,9 @@
 \begin{document}
     \maketitle
     \section{Part 1}
-        To formulate the problem, let $y$ be an arbitrary element of the universe, $U$. The false positive rate can be expressed as a probability
-        $$Pr \left[ y \in U \backslash S \land \lor_{x \in S} \left( h(x) = h(y) \right) \right]$$
-        By Kolmogorov definition, it can be further decomposed into the product of two probabilities
-        $$Pr \left[ \lor_{x \in S} \left( h(x) = h(y) \right) | y \in U \backslash S \right] \cdot Pr \left[ y \in U \backslash S \right]$$
-        For the latter probability it is pretty simple, which is saying to draw an arbitrary item from the universe $U$ but it should not be an element of the subset $S$. So it is simply
-        $$Pr \left[ y \in U \backslash S \right] = \frac{n - m}{n}$$
-        Based on the universality property of 2-universal hash family, we know that
-        $$\forall x, y \in U \ x \neq y \Rightarrow Pr \left[ h(x) = h(y) \right] \leq \frac{1}{r}$$
-        Draw an arbitrary $y$ outside of the subset $S$ but within the universe $U$, and let $c = h(y)$. By the property above, we can get that
-        $$\forall x \in S \  Pr \left[ h(x) = c \right] \leq \frac{1}{r}$$
-        Thus, after $m$ updates, the probability of collision, by the assumption of independence, raises to
-        $$Pr \left[ \lor_{x \in S} \left( h(x) = c \right) \right] = \sum_{x \in S} Pr \left[ h(x) = c \right] \leq \frac{m}{r}$$
-        In another word, it is an conditional probability which is
-        $$Pr \left[ \lor_{x \in S} \left( h(x) = h(y) \right) | y \in U \backslash S \right] \leq \frac{m}{r}$$
-        Thus, the probability of false positive is
-        $$Pr \left[ \lor_{x \in S} \left( h(x) = h(y) \right) \land y \in U \backslash S \right] = Pr \left[ \lor_{x \in S} \left( h(x) = h(y) \right) | y \in U \backslash S \right] \cdot Pr \left[ y \in U \backslash S \right] \leq \frac{(n - m)m}{r n}$$
-        Introducing the parameter $\epsilon$, we get
-        \begin{equation*}
-            \begin{split}
-                \frac{(n - m)m}{r n} & \leq \epsilon \\
-                r & \geq \frac{(n - m)m}{n \epsilon}
-            \end{split}
-        \end{equation*}
+    Let $S$ denotes the union, i.e. $$S = S_1 \cup S_2$$
+    From the inequality, we can claim that the inequality inherently holds for $\forall x \in S \backslash S_2$ and $\forall x \in S \backslash S_1$. So the only task is to prove that the inequality holds for the third circumstance where $$\forall x \in S_1 \cap S_2$$
+    Use $\hat{S}$ as the intersection $$\hat{S} = S_1 \cap S_2$$
+    First prove the $RHS$ where $\forall x \in \hat{Z}$ $\hat{c} \left( x \right) \leq f_{x}$. As $x \in S_1 \wedge x \in S_2$, we know that $\hat{c}_1 \left( x \right) \leq f_{1,x}$ and $\hat{c}_2 \left( x \right) \leq f_{2,x}$. So $$\hat{c} \left( x \right) = \hat{c}_1 \left( x \right) + \hat{c}_2 \left( x \right) \leq f_{1,x} + f_{2,x} = f_{x}$$
+    Even if the subtraction to shrink the size happens, the $RHS$ still holds as $\forall i \in \mathbb{U}$, $f_{i}$ will not be changed throughout the whole process. For the $LHS$, using the same trick we can get $$f_{1,x} - \frac{m_1 - \tau_1}{k_1} + f_{2,x} - \frac{m_2 - \tau_2}{k_2} = f_x - \frac{m - \tau}{x}$$ So $$\hat{c} \left( x \right) \geq f_x - \frac{m - r}{k} = LHS$$ Subtracting $a$ from each $x \in S$ will decrease the value of $\tau$ by at least $k \cdot a$. Denoting $\Delta \hat{c}_x$ = -a as the change in the counter and $\Delta \tau$ as the change in $\tau \leq -a \cdot k$. It is clear that $f_x$ and $m$ and $k$ are fixed, so $\Delta LHS \leq -a$. So the decrease in the $LHS$ are even greater than $\hat{c} \left( x \right)$, so the inequality still holds.
 \end{document}
